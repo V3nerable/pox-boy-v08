@@ -209,7 +209,6 @@
         #custom-prompt-modal {
             position: fixed !important;
             top: 0; left: 0; right: 0; bottom: 0;
-            display: flex !important;
             align-items: flex-start;
             justify-content: center;
             overflow-y: auto;
@@ -219,6 +218,10 @@
             user-select: auto !important;
             -webkit-user-select: auto !important;
             touch-action: pan-y !important;
+        }
+        /* v0.85: explicit active state — was display:flex!important which made modal always visible */
+        #custom-prompt-modal.active {
+            display: flex !important;
         }
         #custom-prompt-modal .modal-content {
             max-height: 90vh;

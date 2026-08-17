@@ -1741,7 +1741,7 @@
                     btnEl.style.color = b.color;
                 }
                 btnEl.onclick = () => {
-                    document.getElementById('custom-prompt-modal').style.display = 'none';
+                    closeCustomPrompt();
                     if (b.action) b.action();
                 };
                 btnContainer.appendChild(btnEl);
@@ -1755,11 +1755,14 @@
             closeBtn.style.opacity = '0.7';
             closeBtn.style.marginTop = '15px';
             closeBtn.onclick = () => {
-                document.getElementById('custom-prompt-modal').style.display = 'none';
+                closeCustomPrompt();
             };
             btnContainer.appendChild(closeBtn);
             
-            document.getElementById('custom-prompt-modal').style.display = 'flex';
+            // v0.85: use class toggle + inline style — CSS no longer forces display:flex!important
+            const cpModal = document.getElementById('custom-prompt-modal');
+            cpModal.style.display = 'flex';
+            cpModal.classList.add('active');
             // v0.59: ensure scroll works on mobile — reset all scroll positions
             const overlay = document.getElementById('custom-prompt-modal');
             if (overlay) { overlay.scrollTop = 0; overlay.style.webkitOverflowScrolling = 'touch'; }
@@ -2850,8 +2853,14 @@
             if (btnC) btnC.scrollTop = 0;
         }
         
+        // v0.85: helper to close the custom prompt modal (class + inline style)
+        function closeCustomPrompt() {
+            const m = document.getElementById('custom-prompt-modal');
+            if (m) { m.style.display = 'none'; m.classList.remove('active'); }
+        }
+
         function closeModals() { 
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); 
+            document.querySelectorAll('.modal-overlay').forEach(m => { m.style.display = 'none'; m.classList.remove('active'); }); 
             activeItemId = null; 
             if (html5QrCode) stopQRScanner();
         }
