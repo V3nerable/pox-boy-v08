@@ -143,6 +143,16 @@
         "$other":        { ".validate": false }
       }
     },
+    "surrenderCodes": {
+      ".read": true,
+      "$uid": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['code', 'generatedAt'])",
+        "code":        { ".validate": "newData.isString() && newData.val().length == 6" },
+        "generatedAt": { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "$other":      { ".validate": false }
+      }
+    },
     "$other": { ".read": false, ".write": false }
   }
 }

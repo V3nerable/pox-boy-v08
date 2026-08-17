@@ -2101,6 +2101,7 @@
             
             const buttons = [];
             if (canComplete && !alreadyCompleted) {
+                buttons.push({ label: 'ATTACH PHOTO EVIDENCE', action: () => attachPhotoToContract(id, c) });
                 buttons.push({ label: 'COMPLETE CONTRACT', action: () => completeGlobalContract(id, c) });
             }
             if (isDev && c.status === 'open') {
@@ -2116,6 +2117,31 @@
         }
 
         // v0.70: Complete global contract
+        // v0.84: Attach photo evidence to global contract
+        function attachPhotoToContract(id, c) {
+            if (!photoArchive.length) { showNotification('DATABANK EMPTY -- TAKE A PHOTO FIRST.'); return; }
+            photoPickMode = 'contract-evidence';
+            window.pendingContractPhoto = { contractId: id, contract: c };
+            document.getElementById('pp-title').innerText = 'SELECT PHOTO EVIDENCE';
+            let html = '<div class="photo-tile-grid">';
+            photoArchive.forEach((e, i) => { html += `<div class="photo-tile" onclick="pickPhotoForContractEvidence(${i})"><img src="${entryPip(e)}"></div>`; });
+            document.getElementById('pp-grid').innerHTML = html + '</div>';
+            document.getElementById('photo-pick-modal').style.display = 'flex';
+        }
+
+        // v0.84: Pick photo for contract evidence
+        function pickPhotoForContractEvidence(idx) {
+            const entry = photoArchive[idx];
+            if (!entry) return;
+            document.getElementById('photo-pick-modal').style.display = 'none';
+            if (window.pendingContractPhoto) {
+                window.pendingContractPhoto.photo = entry;
+                showNotification('PHOTO ATTACHED - NOW COMPLETE CONTRACT');
+                // Re-open the contract modal to complete with photo
+                openGlobalContractModal(window.pendingContractPhoto.contractId, window.pendingContractPhoto.contract);
+            }
+        }
+
         function completeGlobalContract(id, c) {
             const myUid = localStorage.getItem('pipboy-uid');
             const myName = userProfile.name || 'UNKNOWN';
@@ -2124,12 +2150,23 @@
             if (c.type === 'first') {
                 updates.status = 'completed';
                 updates.completedBy = myUid;
+                updates.completedByName = myName;
                 updates.verifiedBy = null; // needs verification
+                // v0.84: attach photo evidence if available
+                if (window.pendingContractPhoto && window.pendingContractPhoto.contractId === id && window.pendingContractPhoto.photo) {
+                    updates.evidencePhoto = window.pendingContractPhoto.photo;
+                    window.pendingContractPhoto = null; // clear pending photo
+                }
             } else if (c.type === 'many') {
                 const completedBy = c.completedBy || [];
                 if (!completedBy.includes(myUid)) {
                     completedBy.push(myUid);
                     updates.completedBy = completedBy;
+                    // v0.84: attach photo evidence if available
+                    if (window.pendingContractPhoto && window.pendingContractPhoto.contractId === id && window.pendingContractPhoto.photo) {
+                        updates.evidencePhoto = window.pendingContractPhoto.photo;
+                        window.pendingContractPhoto = null; // clear pending photo
+                    }
                 }
             }
             
@@ -2172,10 +2209,14 @@
             const myUid = localStorage.getItem('pipboy-uid');
             const isDev = localStorage.getItem('pipboy-dev-mode') === 'true';
             const canClaim = b.status === 'open' && b.targetUid !== myUid && (!b.expiresAt || b.expiresAt > Date.now());
+            const isTarget = b.targetUid === myUid;
             
             const buttons = [];
             if (canClaim) {
-                buttons.push({ label: 'CLAIM BOUNTY (SCAN TARGET)', action: () => claimBounty(id, b) });
+                buttons.push({ label: 'CLAIM BOUNTY', action: () => claimBounty(id, b) });
+            }
+            if (isTarget && b.status === 'open') {
+                buttons.push({ label: 'GENERATE SURRENDER CODE', action: () => generateSurrenderCode() });
             }
             if (isDev && b.status === 'open') {
                 buttons.push({ label: 'VERIFY (OVERSEER)', action: () => verifyBounty(id, b) });
@@ -2190,11 +2231,84 @@
 
         // v0.70: Claim bounty (scan target's datacard)
         function claimBounty(id, b) {
-            showNotification('SCAN TARGET\'S DATACARD TO CLAIM BOUNTY');
-            // Store pending bounty claim
-            window.pendingBountyClaim = { id, bounty: b };
-            // Start QR scanner
-            startQRScanner();
+            // v0.84: Ask for surrender code instead of scanning
+            showCustomPrompt('ENTER TARGET\'S SURRENDER CODE (6 digits)', [
+                { label: 'ENTER CODE', action: () => {
+                    const code = prompt('Enter 6-digit surrender code:');
+                    if (code && code.length === 6 && /^\d{6}$/.test(code)) {
+                        validateSurrenderCode(id, b, code);
+                    } else {
+                        showNotification('INVALID CODE - MUST BE 6 DIGITS');
+                    }
+                }},
+                { label: 'CANCEL', color: 'var(--pip-color-dim)', action: () => {} }
+            ]);
+        }
+
+        // v0.84: Validate surrender code
+        function validateSurrenderCode(id, b, code) {
+            if (!window.db) {
+                showNotification('No database connection');
+                return;
+            }
+            // Check if target has generated this code
+            const targetUid = b.targetUid;
+            const surrenderCodeRef = window.firebaseRef(window.db, 'surrenderCodes/' + targetUid);
+            window.firebaseGet(surrenderCodeRef).then(snap => {
+                const data = snap.val();
+                if (!data || data.code !== code) {
+                    showNotification('INVALID SURRENDER CODE');
+                    return;
+                }
+                // Check if code has expired (5 minutes)
+                const now = Date.now();
+                if (now - data.generatedAt > 5 * 60 * 1000) {
+                    showNotification('SURRENDER CODE EXPIRED - TARGET MUST GENERATE NEW CODE');
+                    return;
+                }
+                // Code is valid, claim the bounty
+                window.firebaseUpdate(window.firebaseRef(window.db, 'bounties/' + id), { 
+                    status: 'claimed',
+                    claimedBy: localStorage.getItem('pipboy-uid'),
+                    claimedByName: userProfile.name || 'UNKNOWN',
+                    claimedAt: now
+                })
+                    .then(() => {
+                        showNotification('BOUNTY CLAIMED - AWAITING VERIFICATION');
+                        renderBounties();
+                        // Delete the surrender code
+                        window.firebaseRemove(surrenderCodeRef).catch(() => {});
+                    })
+                    .catch(err => showNotification('ERROR: ' + err.message));
+            }).catch(err => {
+                showNotification('ERROR VALIDATING CODE: ' + String(err));
+            });
+        }
+
+        // v0.84: Generate surrender code for target (called by target)
+        function generateSurrenderCode() {
+            if (!window.db) {
+                showNotification('No database connection');
+                return;
+            }
+            const myUid = localStorage.getItem('pipboy-uid');
+            if (!myUid) {
+                showNotification('No user ID found');
+                return;
+            }
+            // Generate random 6-digit code
+            const code = String(Math.floor(100000 + Math.random() * 900000));
+            const surrenderCodeRef = window.firebaseRef(window.db, 'surrenderCodes/' + myUid);
+            window.firebaseSet(surrenderCodeRef, {
+                code: code,
+                generatedAt: Date.now()
+            })
+                .then(() => {
+                    showCustomPrompt('YOUR SURRENDER CODE (VALID FOR 5 MINUTES)', [
+                        { label: code, action: () => {} }
+                    ]);
+                })
+                .catch(err => showNotification('ERROR GENERATING CODE: ' + String(err)));
         }
 
         // v0.70: Verify bounty (overseer)
@@ -3749,7 +3863,7 @@
                 return;
             }
             pariahEl.style.display = 'block';
-            pariahEl.innerHTML = renderPariahPanel() + renderOverseerUserManagement() + renderOverseerGlowingOnes();
+            pariahEl.innerHTML = renderPariahPanel() + renderOverseerUserManagement() + renderOverseerGlowingOnes() + renderOverseerContractsToVerify();
         }
 
         // v0.63: overseer user management — view ALL users who have EVER broadcast, remove dead ones
@@ -3939,6 +4053,100 @@
                     }).catch(err => {
                         showNotification('Error loading user: ' + String(err));
                     });
+                }},
+                { label: 'CANCEL', color: 'var(--pip-color-dim)', action: () => {} }
+            ]);
+        }
+
+        // v0.84: render contracts to verify section for overseer
+        function renderOverseerContractsToVerify() {
+            let html = '<h3 style="color:#ffb642; text-shadow:0 0 6px #ffb642; margin-top:20px;">CONTRACTS TO VERIFY</h3>';
+            html += '<p style="font-size:0.9rem; opacity:0.75; margin-bottom:10px;">COMPLETED CONTRACTS AWAITING OVERSEER VERIFICATION</p>';
+            html += '<div id="overseer-contracts-list" style="max-height:300px; overflow-y:auto; border:1px dashed var(--pip-color-dim); padding:10px;">';
+            html += '<p style="opacity:0.5;">Loading...</p>';
+            html += '</div>';
+            html += '<button class="pip-btn" onclick="loadOverseerContractsToVerify()" style="margin-top:10px; border-style:dashed;">[REFRESH CONTRACTS]</button>';
+            return html;
+        }
+
+        // v0.84: load contracts to verify from Firebase
+        function loadOverseerContractsToVerify() {
+            const el = document.getElementById('overseer-contracts-list');
+            if (!el || !window.db) {
+                if (el) el.innerHTML = '<p style="opacity:0.5;">No database connection</p>';
+                return;
+            }
+            el.innerHTML = '<p style="opacity:0.5;">Loading...</p>';
+            const contractsRef = window.firebaseRef(window.db, 'globalContracts/');
+            window.firebaseGet(contractsRef).then(snap => {
+                const data = snap.val() || {};
+                const toVerify = Object.keys(data).filter(id => {
+                    const c = data[id];
+                    return c.status === 'completed' && !c.verifiedBy;
+                }).map(id => ({ id, ...data[id] }));
+                
+                if (!toVerify.length) {
+                    el.innerHTML = '<p style="opacity:0.5;">No contracts awaiting verification</p>';
+                    return;
+                }
+                
+                let html = '<p style="margin-bottom:10px;">' + toVerify.length + ' contract' + (toVerify.length > 1 ? 's' : '') + ' awaiting verification</p>';
+                toVerify.forEach(c => {
+                    html += '<div style="padding:6px 0; border-bottom:1px dashed var(--pip-color-dim);">';
+                    html += '<div style="font-weight:bold;">' + escapeHtml(c.title) + '</div>';
+                    html += '<div style="font-size:0.8rem; opacity:0.7;">Completed by: ' + escapeHtml(c.completedByName || 'UNKNOWN') + '</div>';
+                    if (c.evidencePhoto) {
+                        html += '<div style="font-size:0.8rem; opacity:0.7;">📷 Photo evidence attached</div>';
+                    }
+                    html += '<div style="display:flex; gap:5px; margin-top:5px;">';
+                    html += '<button class="pip-btn" onclick="verifyOverseerContract(\'' + c.id + '\')" style="flex:1; border-color:#39ff14; color:#39ff14; font-size:0.85rem;">[VERIFY]</button>';
+                    html += '<button class="pip-btn" onclick="rejectOverseerContract(\'' + c.id + '\')" style="flex:1; border-color:#ff3333; color:#ff3333; font-size:0.85rem;">[REJECT]</button>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+                el.innerHTML = html;
+            }).catch(err => {
+                el.innerHTML = '<p style="color:#ff3333;">Error loading: ' + escapeHtml(String(err)) + '</p>';
+            });
+        }
+
+        // v0.84: verify a contract (overseer only)
+        function verifyOverseerContract(id) {
+            if (!window.db) {
+                showNotification('No database connection');
+                return;
+            }
+            showCustomPrompt('VERIFY THIS CONTRACT? THE COMPLETION WILL BE MARKED AS VERIFIED.', [
+                { label: 'VERIFY', color: '#39ff14', action: () => {
+                    const contractRef = window.firebaseRef(window.db, 'globalContracts/' + id);
+                    window.firebaseUpdate(contractRef, { verifiedBy: userProfile.name || 'OVERSEER' })
+                        .then(() => {
+                            showNotification('CONTRACT VERIFIED');
+                            loadOverseerContractsToVerify(); // refresh the list
+                        }).catch(err => {
+                            showNotification('Error verifying: ' + String(err));
+                        });
+                }},
+                { label: 'CANCEL', color: 'var(--pip-color-dim)', action: () => {} }
+            ]);
+        }
+
+        // v0.84: reject a contract (overseer only)
+        function rejectOverseerContract(id) {
+            if (!window.db) {
+                showNotification('No database connection');
+                return;
+            }
+            showCustomPrompt('REJECT THIS CONTRACT? THE COMPLETION WILL BE MARKED AS REJECTED.', [
+                { label: 'REJECT', color: '#ff3333', action: () => {
+                    const contractRef = window.firebaseRef(window.db, 'globalContracts/' + id);
+                    window.firebaseUpdate(contractRef, { verifiedBy: 'REJECTED', status: 'rejected' })
+                        .then(() => {
+                            showNotification('CONTRACT REJECTED');
+                            loadOverseerContractsToVerify(); // refresh the list
+                        }).catch(err => {
+                            showNotification('Error rejecting: ' + String(err));
+                        });
                 }},
                 { label: 'CANCEL', color: 'var(--pip-color-dim)', action: () => {} }
             ]);

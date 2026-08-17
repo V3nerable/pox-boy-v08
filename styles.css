@@ -221,8 +221,8 @@
             touch-action: pan-y !important;
         }
         #custom-prompt-modal .modal-content {
-            max-height: none;
-            overflow-y: visible;
+            max-height: 90vh;
+            overflow-y: auto;
             margin: 20px auto;
             user-select: auto !important;
             -webkit-user-select: auto !important;
