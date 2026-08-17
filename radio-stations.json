@@ -1,0 +1,673 @@
+{
+ "generated": 1786525302,
+ "stations": [
+  {
+   "id": "gnr",
+   "name": "CAPITAL WASTELAND RADIO",
+   "item": "pox-radio-gnr2",
+   "base": "https://pox-radio.netlify.app/gnr",
+   "tracks": [
+    {
+     "t": "CRAZY HE CALLS ME",
+     "a": "BILLIE HOLIDAY",
+     "f": "Billie Holiday Crazy.opus",
+     "b": 1499676,
+     "d": 183.07
+    },
+    {
+     "t": "EASY LIVING",
+     "a": "BILLIE HOLIDAY",
+     "f": "Billie Holiday Easy.opus",
+     "b": 1493947,
+     "d": 182.24
+    },
+    {
+     "t": "HAPPY TIMES",
+     "a": "BOB CROSBY",
+     "f": "Bob Crosby Happy.opus",
+     "b": 1327973,
+     "d": 161.21
+    },
+    {
+     "t": "WAY BACK HOME",
+     "a": "BOB CROSBY",
+     "f": "Bob Crosby Way.opus",
+     "b": 1377915,
+     "d": 170.82
+    },
+    {
+     "t": "ANYTHING GOES",
+     "a": "COLE PORTER",
+     "f": "Cole Porter Anything.opus",
+     "b": 1522484,
+     "d": 187.98
+    },
+    {
+     "t": "CIVILIZATION",
+     "a": "DANNY KAYE & THE ANDREWS SISTERS",
+     "f": "Danny Kaye Civilization.opus",
+     "b": 1438299,
+     "d": 180.9
+    },
+    {
+     "t": "INTO EACH LIFE SOME RAIN MUST FALL",
+     "a": "ELLA FITZGERALD",
+     "f": "Ella Fitzgerald Into You.opus",
+     "b": 1442679,
+     "d": 186.13
+    },
+    {
+     "t": "BUTCHER PETE (PART 1)",
+     "a": "ROY BROWN",
+     "f": "Roy Brown Butcher.opus",
+     "b": 1137695,
+     "d": 145.87
+    },
+    {
+     "t": "MIGHTY MIGHTY MAN",
+     "a": "ROY BROWN",
+     "f": "Roy Brown Mighty.opus",
+     "b": 1228042,
+     "d": 152.38
+    },
+    {
+     "t": "A WONDERFUL GUY",
+     "a": "TEX BENEKE & HIS ORCHESTRA",
+     "f": "Tex Beneke Guy.opus",
+     "b": 942395,
+     "d": 112.44
+    },
+    {
+     "t": "I DON'T WANT TO SET THE WORLD ON FIRE",
+     "a": "THE INK SPOTS",
+     "f": "The Ink Spots I Dont Want To Set The World On Fire.opus",
+     "b": 1438746,
+     "d": 185.79
+    },
+    {
+     "t": "MAYBE",
+     "a": "THE INK SPOTS",
+     "f": "The Ink Spots Maybe.opus",
+     "b": 1344233,
+     "d": 170.19
+    },
+    {
+     "t": "AMERICA THE BEAUTIFUL",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_america.opus",
+     "b": 582189,
+     "d": 68.34
+    },
+    {
+     "t": "BATTLE HYMN OF THE REPUBLIC",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_battlehymn.opus",
+     "b": 247400,
+     "d": 30.83
+    },
+    {
+     "t": "DIXIE",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_dixie.opus",
+     "b": 377295,
+     "d": 47.5
+    },
+    {
+     "t": "THE HALLS OF MONTEZUMA",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_montezuma.opus",
+     "b": 340698,
+     "d": 41.65
+    },
+    {
+     "t": "PRESIDENTIAL ENTRANCE",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_presidential.opus",
+     "b": 558352,
+     "d": 70.51
+    },
+    {
+     "t": "STARS AND STRIPES FOREVER",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_stars.opus",
+     "b": 682018,
+     "d": 82.55
+    },
+    {
+     "t": "WASHINGTON POST MARCH",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_washington.opus",
+     "b": 466460,
+     "d": 56.27
+    },
+    {
+     "t": "YANKEE DOODLE",
+     "a": "ENCLAVE RADIO",
+     "f": "mus_enclave_yankee.opus",
+     "b": 568726,
+     "d": 72.91
+    },
+    {
+     "t": "BACH \u2014 PARTITA NO. 3: GIGUE",
+     "a": "AGATHA'S STATION",
+     "f": "mus_violin_partitano3gigue_bach_radio.opus",
+     "b": 1030563,
+     "d": 112.1
+    },
+    {
+     "t": "BACH \u2014 PARTITA NO. 3: PRELUDIO",
+     "a": "AGATHA'S STATION",
+     "f": "mus_violin_partitano3p_bach_radio.opus",
+     "b": 2111580,
+     "d": 225.52
+    },
+    {
+     "t": "BACH \u2014 SONATA NO. 2: GRAVE",
+     "a": "AGATHA'S STATION",
+     "f": "mus_violin_sonatano2grave_bach_radio.opus",
+     "b": 2539959,
+     "d": 256.89
+    },
+    {
+     "t": "DVO\u0158\u00c1K \u2014 CELLO CONCERTO MVMT 1",
+     "a": "AGATHA'S STATION",
+     "f": "mus_violin_vc_1stmov_dvorak_radio.opus",
+     "b": 3576820,
+     "d": 384.84
+    },
+    {
+     "t": "DVO\u0158\u00c1K \u2014 CELLO CONCERTO MVMT 2",
+     "a": "AGATHA'S STATION",
+     "f": "mus_violin_vc_2ndmov_dvorak_radio.opus",
+     "b": 2946874,
+     "d": 315.8
+    },
+    {
+     "t": "SARASATE \u2014 ZIGEUNERWEISEN",
+     "a": "AGATHA'S STATION",
+     "f": "mus_violin_z_sarasate_radio.opus",
+     "b": 2911514,
+     "d": 315.93
+    }
+   ]
+  },
+  {
+   "id": "dcr",
+   "name": "COMMONWEALTH RADIO",
+   "item": "pox-radio-dcr",
+   "base": "https://pox-radio.netlify.app/dcr",
+   "tracks": [
+    {
+     "t": "HE'S A DEMON",
+     "a": "BETTY HUTTON",
+     "f": "MUS_Radio_Diamond_BettyHutton_HesADemon.opus",
+     "b": 1546265,
+     "d": 193.03
+    },
+    {
+     "t": "IT'S A MAN",
+     "a": "BETTY HUTTON",
+     "f": "MUS_Radio_Diamond_BettyHutton_ItsAMan.opus",
+     "b": 1168568,
+     "d": 143.45
+    },
+    {
+     "t": "WHOLE LOTTA SHAKIN GOIN ON",
+     "a": "BIG MAYBELLE",
+     "f": "MUS_Radio_Diamond_BigMaybelle_WholeLottaShakinGoinOn.opus",
+     "b": 1263441,
+     "d": 164.57
+    },
+    {
+     "t": "CRAZY HE CALLS ME",
+     "a": "BILLIE HOLIDAY",
+     "f": "MUS_Radio_Diamond_BillieHoliday_CrazyHeCallsMe.opus",
+     "b": 1507132,
+     "d": 182.92
+    },
+    {
+     "t": "EASY LIVING",
+     "a": "BILLIE HOLIDAY",
+     "f": "MUS_Radio_Diamond_BillieHoliday_EasyLiving.opus",
+     "b": 1484736,
+     "d": 181.81
+    },
+    {
+     "t": "SIXTY MINUTE MAN",
+     "a": "BILLY WARD AND THE DOMINOES",
+     "f": "MUS_Radio_Diamond_BillyWardAndTheDominoes_SixtyMinuteMan.opus",
+     "b": 1182260,
+     "d": 146.87
+    },
+    {
+     "t": "ACCENTUATE THE POSITIVE",
+     "a": "BING CROSBY",
+     "f": "MUS_Radio_Diamond_BingCrosby_AccentuateThePositive.opus",
+     "b": 522816,
+     "d": 68.36
+    },
+    {
+     "t": "PISTOL PACKIN MAMA",
+     "a": "BING CROSBY",
+     "f": "MUS_Radio_Diamond_BingCrosby_PistolPackinMama.opus",
+     "b": 1440330,
+     "d": 178.91
+    },
+    {
+     "t": "DEAR HEARTS AND GENTLE PEOPLE",
+     "a": "BOB CROSBY",
+     "f": "MUS_Radio_Diamond_BobCrosby_DearHeartsAndGentlePeople.opus",
+     "b": 1016392,
+     "d": 129.12
+    },
+    {
+     "t": "HAPPY TIMES",
+     "a": "BOB CROSBY",
+     "f": "MUS_Radio_Diamond_BobCrosby_HappyTimes.opus",
+     "b": 1331133,
+     "d": 161.8
+    },
+    {
+     "t": "WAY BACK HOME",
+     "a": "BOB CROSBY",
+     "f": "MUS_Radio_Diamond_BobCrosby_WayBackHome.opus",
+     "b": 1383617,
+     "d": 170.63
+    },
+    {
+     "t": "ANYTHING GOES",
+     "a": "COLE PORTER",
+     "f": "MUS_Radio_Diamond_ColePorter_AnythingGoes.opus",
+     "b": 1524528,
+     "d": 187.83
+    },
+    {
+     "t": "ROCKET 69",
+     "a": "CONNIE ALLEN",
+     "f": "MUS_Radio_Diamond_ConnieAllen_Rocket69.opus",
+     "b": 1334496,
+     "d": 161.24
+    },
+    {
+     "t": "CIVILIZATION",
+     "a": "DANNY KAYE",
+     "f": "MUS_Radio_Diamond_DannyKaye_Civilization.opus",
+     "b": 1472290,
+     "d": 180.66
+    },
+    {
+     "t": "INTO EACH LIFE",
+     "a": "ELLA FITZGERALD",
+     "f": "MUS_Radio_Diamond_EllaFitzgerald_IntoEachLife.opus",
+     "b": 1435181,
+     "d": 186.76
+    },
+    {
+     "t": "UNDECIDED",
+     "a": "ELLA FITZGERALD",
+     "f": "MUS_Radio_Diamond_EllaFitzgerald_Undecided.opus",
+     "b": 1496049,
+     "d": 187.78
+    },
+    {
+     "t": "URANIUM FEVER",
+     "a": "ELTON BRITT",
+     "f": "MUS_Radio_Diamond_EltonBritt_UraniumFever.opus",
+     "b": 1076893,
+     "d": 138.03
+    },
+    {
+     "t": "ONE MORE TOMORROW",
+     "a": "FRANKIE CARLE",
+     "f": "MUS_Radio_Diamond_FrankieCarle_OneMoreTomorrow.opus",
+     "b": 1667710,
+     "d": 197.81
+    },
+    {
+     "t": "PERSONALITY",
+     "a": "JOHNNY MERCER",
+     "f": "MUS_Radio_Diamond_JohnnyMercer_Personality.opus",
+     "b": 1307393,
+     "d": 166.49
+    },
+    {
+     "t": "KEEP A KNOCKIN",
+     "a": "LOUIS JORDAN",
+     "f": "MUS_Radio_Diamond_LouisJordan_KeepAKnockin.opus",
+     "b": 1239604,
+     "d": 149.72
+    },
+    {
+     "t": "ORANGE COLORED SKY",
+     "a": "NAT KING COLE",
+     "f": "MUS_Radio_Diamond_NatKingCole_OrangeColoredSky.opus",
+     "b": 1177841,
+     "d": 151.22
+    },
+    {
+     "t": "RIGHT BEHIND YOU BABY",
+     "a": "RAY SMITH",
+     "f": "MUS_Radio_Diamond_RaySmith_RightBehindYouBaby.opus",
+     "b": 1097990,
+     "d": 143.28
+    },
+    {
+     "t": "BUTCHER PETE PART 1",
+     "a": "ROY BROWN",
+     "f": "MUS_Radio_Diamond_RoyBrown_ButcherPetePart1.opus",
+     "b": 1137484,
+     "d": 145.54
+    },
+    {
+     "t": "BUTCHER PETE PART 2",
+     "a": "ROY BROWN",
+     "f": "MUS_Radio_Diamond_RoyBrown_ButcherPetePart2.opus",
+     "b": 1238322,
+     "d": 161.03
+    },
+    {
+     "t": "GOOD ROCKIN TONIGHT",
+     "a": "ROY BROWN",
+     "f": "MUS_Radio_Diamond_RoyBrown_GoodRockinTonight.opus",
+     "b": 1375006,
+     "d": 175.88
+    },
+    {
+     "t": "MIGHTY MIGHTY MAN",
+     "a": "ROY BROWN",
+     "f": "MUS_Radio_Diamond_RoyBrown_MightyMightyMan.opus",
+     "b": 1237944,
+     "d": 153.31
+    },
+    {
+     "t": "CRAWL OUT THROUGH THE FALLOUT",
+     "a": "SHELDON ALLMAN",
+     "f": "MUS_Radio_Diamond_SheldonAllman_CrawlOutThroughTheFallout.opus",
+     "b": 1125309,
+     "d": 142.77
+    },
+    {
+     "t": "THE END OF THE WORLD",
+     "a": "SKEETER DAVIS",
+     "f": "MUS_Radio_Diamond_SkeeterDavis_TheEndOfTheWorld.opus",
+     "b": 1301740,
+     "d": 156.08
+    },
+    {
+     "t": "A WONDERFUL GUY",
+     "a": "TEX BENEKE",
+     "f": "MUS_Radio_Diamond_TexBenekeAWonderfulGuy.opus",
+     "b": 948583,
+     "d": 112.52
+    },
+    {
+     "t": "ATOM BOMB BABY",
+     "a": "THE FIVE STARS",
+     "f": "MUS_Radio_Diamond_TheFiveStars_AtomBombBaby.opus",
+     "b": 1049518,
+     "d": 136.28
+    },
+    {
+     "t": "I DON'T WANT TO SET",
+     "a": "THE INK SPOTS",
+     "f": "MUS_Radio_Diamond_TheInkSpots_IDontWantToSet.opus",
+     "b": 1429759,
+     "d": 184.11
+    },
+    {
+     "t": "IT'S ALL OVER BUT THE CRYING",
+     "a": "THE INK SPOTS",
+     "f": "MUS_Radio_Diamond_TheInkSpots_ItsAllOverButTheCrying.opus",
+     "b": 1284946,
+     "d": 167.09
+    },
+    {
+     "t": "MAYBE",
+     "a": "THE INK SPOTS",
+     "f": "MUS_Radio_Diamond_TheInkSpots_Maybe.opus",
+     "b": 1342759,
+     "d": 170.72
+    },
+    {
+     "t": "WORRY WORRY WORRY",
+     "a": "THE THREE SUNS",
+     "f": "MUS_Radio_Diamond_TheThreeSuns_WorryWorryWorry.opus",
+     "b": 1168269,
+     "d": 150.53
+    },
+    {
+     "t": "URANIUM ROCK",
+     "a": "WARREN SMITH",
+     "f": "MUS_Radio_Diamond_WarrenSmith_UraniumRock.opus",
+     "b": 989247,
+     "d": 125.87
+    },
+    {
+     "t": "GRANDMA PLAYS THE NUMBERS",
+     "a": "WYNONIE HARRIS",
+     "f": "MUS_Radio_Diamond_WynonieHarris_GrandmaPlaysTheNumbers.opus",
+     "b": 1246615,
+     "d": 157.02
+    }
+   ]
+  },
+  {
+   "id": "appa",
+   "name": "APPALACHIA RADIO",
+   "item": "pox-radio-appa",
+   "base": "https://pox-radio.netlify.app/appa",
+   "tracks": [
+    {
+     "t": "STRAIGHTEN UP AND FLY RIGHT",
+     "a": "THE ANDREWS SISTERS",
+     "f": "mus_radio_76_general_andrewssisters_straightenupandflyright.opus",
+     "b": 1152686,
+     "d": 145.67
+    },
+    {
+     "t": "WOULDN'T IT BE NICE",
+     "a": "THE BEACH BOYS",
+     "f": "mus_radio_76_general_beachboys_wouldntitbenice.opus",
+     "b": 1170788,
+     "d": 151.9
+    },
+    {
+     "t": "HAPPY DAYS ARE HERE AGAIN",
+     "a": "BEN SELVIN",
+     "f": "mus_radio_76_general_benselvin_happydaysarehereagain.opus",
+     "b": 1511282,
+     "d": 197.77
+    },
+    {
+     "t": "DON'T FENCE ME IN",
+     "a": "BING CROSBY & THE ANDREWS SISTERS",
+     "f": "mus_radio_76_general_bingcrosbyandrewssisters_dontfencemein.opus",
+     "b": 1467672,
+     "d": 183.0
+    },
+    {
+     "t": "PISTOL PACKIN' MAMA",
+     "a": "BING CROSBY & THE ANDREWS SISTERS",
+     "f": "mus_radio_76_general_bingcrosbyandrewssisters_pistolpackinmama.opus",
+     "b": 1465274,
+     "d": 181.21
+    },
+    {
+     "t": "NOBODY'S FAULT BUT MINE",
+     "a": "BLIND WILLIE JOHNSON",
+     "f": "mus_radio_76_general_blindwilliejohnson_nobodysfaultbutmine.opus",
+     "b": 1462156,
+     "d": 189.57
+    },
+    {
+     "t": "DEAR HEARTS AND GENTLE PEOPLE",
+     "a": "BOB CROSBY",
+     "f": "mus_radio_76_general_bobcrosby_dearheartsandgentlepeople.opus",
+     "b": 1020882,
+     "d": 129.12
+    },
+    {
+     "t": "BUBBLES IN MY BEER",
+     "a": "BOB WILLS",
+     "f": "mus_radio_76_general_bobwillis_bubblesinmybeers.opus",
+     "b": 1123873,
+     "d": 136.97
+    },
+    {
+     "t": "STEEL GUITAR RAG",
+     "a": "BOB WILLS",
+     "f": "mus_radio_76_general_bobwills_steelguitarrag.opus",
+     "b": 1280093,
+     "d": 152.88
+    },
+    {
+     "t": "A GOOD MAN IS HARD TO FIND",
+     "a": "CASS DALEY",
+     "f": "mus_radio_76_general_cassdaley_agoodmanishardtofind.opus",
+     "b": 1246405,
+     "d": 157.32
+    },
+    {
+     "t": "I CAN'T DANCE, I'VE GOT ANTS IN MY PANTS",
+     "a": "CHICK WEBB",
+     "f": "mus_radio_76_general_chickwebb_icantdanceigotantsinmypants.opus",
+     "b": 1393997,
+     "d": 177.24
+    },
+    {
+     "t": "MIDNITE IN A MADHOUSE",
+     "a": "CHICK WEBB",
+     "f": "mus_radio_76_general_chickwebb_midniteinamadhouse.opus",
+     "b": 1197808,
+     "d": 149.6
+    },
+    {
+     "t": "WHEN I GET LOW I GET HIGH",
+     "a": "CHICK WEBB",
+     "f": "mus_radio_76_general_chickwebb_whenigetlowigethigh.opus",
+     "b": 1139794,
+     "d": 143.67
+    },
+    {
+     "t": "MR. SANDMAN",
+     "a": "THE CHORDETTES",
+     "f": "mus_radio_76_general_chordettes_mrsandman.opus",
+     "b": 1161670,
+     "d": 140.89
+    },
+    {
+     "t": "ANYTHING GOES",
+     "a": "COLE PORTER",
+     "f": "mus_radio_76_general_coleporter_anythinggoes.opus",
+     "b": 1546014,
+     "d": 189.23
+    },
+    {
+     "t": "URANIUM",
+     "a": "THE COMMODORES",
+     "f": "mus_radio_76_general_commodores_uranium.opus",
+     "b": 1045942,
+     "d": 133.81
+    },
+    {
+     "t": "TAKE ME HOME, COUNTRY ROADS",
+     "a": "COPILOT",
+     "f": "mus_radio_76_general_copilot_countryroads.opus",
+     "b": 1460200,
+     "d": 179.12
+    },
+    {
+     "t": "OL' MAN MOSE",
+     "a": "EDDY DUCHIN",
+     "f": "mus_radio_76_general_eddyduchin_olmanmose.opus",
+     "b": 1145660,
+     "d": 146.57
+    },
+    {
+     "t": "ATOM BOMB BABY",
+     "a": "THE FIVE STARS",
+     "f": "mus_radio_76_general_fivestars_atombombbaby.opus",
+     "b": 1053470,
+     "d": 136.37
+    },
+    {
+     "t": "JUKEBOX SATURDAY NIGHT",
+     "a": "GLENN MILLER",
+     "f": "mus_radio_76_general_glennmiller_jukeboxsaturdaynight.opus",
+     "b": 1467241,
+     "d": 184.24
+    },
+    {
+     "t": "PRAISE THE LORD AND PASS THE AMMUNITION",
+     "a": "KAY KYSER & HIS ORCHESTRA",
+     "f": "mus_radio_76_general_kaykyserorchestra_praisethelordandpasstheammunition.opus",
+     "b": 1226257,
+     "d": 152.67
+    },
+    {
+     "t": "SALT PORK, WEST VIRGINIA",
+     "a": "LOUIS JORDAN",
+     "f": "mus_radio_76_general_louisjordan_saltporkwestvirginia.opus",
+     "b": 1431166,
+     "d": 177.33
+    },
+    {
+     "t": "KEEP A-KNOCKIN' (BUT YOU CAN'T COME IN)",
+     "a": "MILTON BROWN",
+     "f": "mus_radio_76_general_miltonbrown_keepknockingbutyoucantcomein.opus",
+     "b": 1242446,
+     "d": 153.01
+    },
+    {
+     "t": "I DIDN'T KNOW THE GUN WAS LOADED",
+     "a": "PATSY MONTANA",
+     "f": "mus_radio_76_general_patsymontana_ididntknowthegunwasloaded.opus",
+     "b": 1299189,
+     "d": 158.73
+    },
+    {
+     "t": "(GHOST) RIDERS IN THE SKY",
+     "a": "SONS OF THE PIONEERS",
+     "f": "mus_radio_76_general_sonsofthepioneers_ridersinthesky.opus",
+     "b": 1094729,
+     "d": 141.36
+    },
+    {
+     "t": "DARK AS A DUNGEON",
+     "a": "TENNESSEE ERNIE FORD",
+     "f": "mus_radio_76_general_tenneseeernieford_darkasadungeon.opus",
+     "b": 1489662,
+     "d": 168.37
+    },
+    {
+     "t": "SHENANDOAH",
+     "a": "TENNESSEE ERNIE FORD",
+     "f": "mus_radio_76_general_tenneseeernieford_shenandoah.opus",
+     "b": 1310173,
+     "d": 158.68
+    },
+    {
+     "t": "SIXTEEN TONS",
+     "a": "TENNESSEE ERNIE FORD",
+     "f": "mus_radio_76_general_tenneseeernieford_sixteentons.opus",
+     "b": 1312890,
+     "d": 155.87
+    }
+   ]
+  },
+  {
+   "id": "unknown",
+   "name": "UNKNOWN TRANSMISSION",
+   "item": "pox-radio-unknown",
+   "base": "https://pox-alt-radio.netlify.app/unknown",
+   "tracks": []
+  },
+  {
+   "id": "waste",
+   "name": "W.A.S.T.E FM",
+   "item": "pox-radio-waste",
+   "base": "https://pox-alt-radio.netlify.app/w.a.s.t.e",
+   "tracks": []
+  }
+ ]
+}

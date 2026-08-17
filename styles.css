@@ -1,0 +1,784 @@
+        :root {
+            --pip-color: #1aff80;
+            --pip-color-dim: #0f8f48;
+            --pip-bg: #051005;
+            --crt-flicker: rgba(26, 255, 128, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--pip-bg);
+            color: var(--pip-color);
+            font-family: 'VT323', monospace;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            text-transform: uppercase;
+        }
+
+        /* CRT Effects */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 20;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+        }
+        .crt::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: var(--crt-flicker);
+            z-index: 20;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+        @keyframes flicker {
+            0% { opacity: 0.9; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Layout */
+        .header {
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--pip-color);
+            font-size: 1.2rem;
+            text-shadow: 0 0 5px var(--pip-color);
+            position: relative;
+            z-index: 10;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-title { font-weight: bold; }
+        .header-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .theme-btn {
+            background: transparent;
+            border: 1px solid var(--pip-color);
+            color: var(--pip-color);
+            font-family: 'VT323', monospace;
+            font-size: 1rem;
+            padding: 2px 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-shadow: 0 0 5px var(--pip-color);
+        }
+        .theme-btn:hover { background: var(--pip-color); color: var(--pip-bg); text-shadow: none; }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 2px solid var(--pip-color-dim);
+            position: relative;
+            z-index: 10;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            height: 50px;
+            flex-shrink: 0;
+        }
+        .nav-item { font-size: 1.4rem; cursor: pointer; text-shadow: 0 0 5px var(--pip-color); opacity: 0.5; transition: opacity 0.2s; padding: 0 10px; white-space: nowrap; flex: 0 0 auto; text-align: center; }
+        .nav-item.active { opacity: 1; border-bottom: 3px solid var(--pip-color); }
+        /* v0.61: prevent mail badge from causing layout shift */
+        #mail-navitem { min-width: 80px; text-align: center; }
+
+        .sub-nav { display: flex; justify-content: center; gap: 15px; padding: 5px 0; border-bottom: 1px dashed var(--pip-color-dim); font-size: 1rem; margin-bottom: 15px; flex-wrap: wrap; row-gap: 6px; }
+        .sub-nav-item { cursor: pointer; opacity: 0.5; }
+        .sub-nav-item.active { opacity: 1; text-decoration: underline; }
+
+        .content-area { flex-grow: 1; padding: 20px; overflow-y: auto; position: relative; z-index: 5; text-shadow: 0 0 4px var(--pip-color); }
+        .tab-content { display: none; font-size: 1.2rem; height: 100%; }
+        /* Special case for tabs that need flexbox instead of block */
+        .tab-content.active { display: block; }
+        #tab-cam.active { display: flex !important; }
+        .sub-tab-content { display: none; }
+        .sub-tab-content.active { display: block; }
+        .quest-tab-content { display: none; }
+        .quest-tab-content.active { display: block; }
+
+        /* Stats Layout */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .special-list p { display: flex; justify-content: space-between; max-width: 150px; margin-bottom: 5px; }
+        .skills-list { column-count: 2; column-gap: 20px; }
+        .vault-boy-container { display: flex; justify-content: center; align-items: center; height: 200px; border: 1px dashed var(--pip-color); margin-bottom: 15px; }
+        .status-bars { margin-top: 20px; }
+
+        /* v0.50: vault-boy status overlays (pure CSS — zero shipped art)
+           fx-rads   = messy CRT-static border + jitter once rads >= 250
+           vb-tre    = drifting orange ☢ while bathed in a rad field
+           vb-cross  = soft green ✚ pulse while in a MED zone */
+        .vault-boy-container #vb-img-wrap.fx-rads img { animation: vbJitter 0.4s steps(2) infinite; border-color:#8fff8f; box-shadow:0 0 14px rgba(87,255,87,.8), inset 0 0 8px rgba(87,255,87,.5); }
+        @keyframes vbJitter { 0% { transform: translate(0,0); } 25% { transform: translate(1px,-1px); } 50% { transform: translate(-1px,1px); } 75% { transform: translate(1px,1px); } 100% { transform: translate(0,0); } }
+        .vb-tre, .vb-cross { position:absolute; font-size:22px; animation: vbFloat 2.4s ease-in-out infinite; text-shadow:0 0 6px currentColor; }
+        @keyframes vbFloat { 0%,100% { opacity:.35; transform: translateY(2px) scale(.9); } 50% { opacity:1; transform: translateY(-3px) scale(1.1); } }
+        .stat-bar { display: flex; align-items: center; margin-bottom: 10px; }
+        .stat-label { width: 40px; }
+        .stat-fill-container { flex-grow: 1; height: 15px; border: 1px solid var(--pip-color); margin-left: 10px; }
+        .stat-fill { height: 100%; background-color: var(--pip-color); box-shadow: 0 0 8px var(--pip-color); }
+
+        /* Items / Quests Layout */
+        .item-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px dashed var(--pip-color-dim); cursor: pointer; transition: background 0.2s; }
+        .item-row:hover { background-color: var(--pip-color-dim); color: var(--pip-bg); text-shadow: none; }
+        .item-info { display: flex; flex-direction: column; }
+        .item-effects { font-size: 0.9rem; opacity: 0.7; }
+        .item-qty { font-weight: bold; }
+
+        .quest-objective { font-size: 0.9rem; opacity: 0.8; margin-top: 5px; padding-left: 15px; border-left: 1px solid var(--pip-color); }
+        .quest-completed { opacity: 0.5; }
+
+        /* Map Layout */
+        #map-container {
+            width: 100%; height: 300px; border: 2px solid var(--pip-color);
+            background-color: var(--pip-bg);
+            position: relative;
+            z-index: 5;
+        }
+        /* Magic trick: turns dark mode maps into glowing phosphor Pip-Boy maps
+           (tint follows the active theme via --tile-filter; default is GREEN) */
+        .leaflet-tile {
+            filter: var(--tile-filter, sepia(100%) hue-rotate(70deg) saturate(600%) brightness(1.1) contrast(1.2));
+        }
+        /* Restyle map controls to match Pip-Boy */
+        .leaflet-control-attribution {
+            background: rgba(0,0,0,0.7) !important;
+            color: var(--pip-color-dim) !important;
+            font-family: 'VT323', monospace;
+        }
+        .leaflet-control-attribution a { color: var(--pip-color) !important; }
+        .leaflet-bar a { 
+            background-color: var(--pip-bg) !important; 
+            color: var(--pip-color) !important; 
+            border: 1px solid var(--pip-color-dim) !important;
+            font-family: 'VT323', monospace;
+        }
+        .leaflet-bar a:hover { background-color: var(--pip-color-dim) !important; color: var(--pip-bg) !important;}
+
+        /* Radio Layout */
+        .radio-station { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid var(--pip-color-dim); cursor: pointer; }
+        .radio-station:hover, .radio-station.playing { background: var(--pip-color-dim); color: var(--pip-bg); }
+        .radio-indicator { width: 20px; visibility: hidden; }
+        .radio-station.playing .radio-indicator { visibility: visible; }
+
+        /* Footer */
+        .footer {
+            padding: 10px; border-top: 2px solid var(--pip-color);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 1rem; position: relative; z-index: 10;
+        }
+        .footer-action-container { flex-grow: 1; text-align: center; }
+
+        .pip-btn {
+            background: transparent; border: 1px solid var(--pip-color); color: var(--pip-color);
+            font-family: 'VT323', monospace; font-size: 1.2rem; padding: 5px 15px; cursor: pointer;
+            text-transform: uppercase; text-shadow: 0 0 5px var(--pip-color); margin-top: 10px; width: 100%;
+        }
+        .pip-btn:hover { background: var(--pip-color); color: var(--pip-bg); text-shadow: none; }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 5px var(--pip-color); }
+            50% { box-shadow: 0 0 25px var(--pip-color); }
+            100% { box-shadow: 0 0 5px var(--pip-color); }
+        }
+        .pulse-alert {
+            animation: pulse-border 1s infinite;
+        }
+
+        /* Modals */
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 30; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { border: 2px solid var(--pip-color); background: var(--pip-bg); padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 0 15px var(--pip-color-dim); max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { border-bottom: 1px solid var(--pip-color); padding-bottom: 5px; margin-bottom: 15px; }
+        /* v0.60: custom prompt modal — position:fixed + full-height scroll to fix touch scrolling on mobile */
+        #custom-prompt-modal {
+            position: fixed !important;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex !important;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px;
+            /* v0.61: override global user-select:none which blocks touch scrolling */
+            user-select: auto !important;
+            -webkit-user-select: auto !important;
+            touch-action: pan-y !important;
+        }
+        #custom-prompt-modal .modal-content {
+            max-height: none;
+            overflow-y: visible;
+            margin: 20px auto;
+            user-select: auto !important;
+            -webkit-user-select: auto !important;
+            touch-action: pan-y !important;
+        }
+        #custom-prompt-modal #cp-buttons {
+            max-height: none;
+            overflow-y: visible;
+            user-select: auto !important;
+            -webkit-user-select: auto !important;
+            touch-action: pan-y !important;
+        }
+        #custom-prompt-modal .pip-btn {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .pip-input { width: 100%; background: transparent; border: 1px solid var(--pip-color); color: var(--pip-color); font-family: 'VT323', monospace; font-size: 1.2rem; padding: 8px; outline: none; }
+        .pip-input option { background: var(--pip-bg); color: var(--pip-color); }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--pip-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--pip-color-dim); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--pip-color); }
+
+        /* Hide scrollbars for cinematic/immersion areas */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @media (orientation: landscape) and (max-height: 600px) {
+            .header { padding: 5px 10px; }
+            .nav-tabs { padding: 5px 0; }
+            .content-area { padding: 10px; }
+            .vault-boy-container { height: 120px; }
+            /* Map and Cam heights are now handled dynamically by flexbox in landscape */
+        }
+        
+        .vk-btn { padding: 4px 0; margin: 0; min-width: 25px; flex-grow: 1; font-size: 1.2rem; }
+
+        /* v0.37 bottom-row fix: punctuation demoted to narrow fixed-share utility keys
+           (v0.35's uniform flex-grow:1 made : - , . boxes comically chunky), and the
+           SPACE/ENTER word keys get text that can never escape its box -- v0.35's 3x/2x
+           flex shares + 1.5rem portrait font pushed both words outside their borders
+           on narrow phones. Width reclaimed from the punct keys also enlarges ENTER. */
+        .vk-btn.vk-sm { flex-grow: 0; flex-shrink: 1; flex-basis: 34px; min-width: 28px; }
+        .vk-btn.vk-wide { overflow: hidden; white-space: nowrap; letter-spacing: 0; }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .vk-btn { padding: 2px 0; font-size: 1rem; min-width: 20px;}
+            #keyboard-modal .modal-content { padding: 5px; border-width: 1px;}
+        }
+
+        /* Prevent native keyboard popup on inputs with 'vk-target' class */
+        input.vk-target { cursor: pointer; }
+
+        /* v0.44: upward-growing composer field (height driven by autoGrowEl) */
+        .pip-input.grow { resize: none; overflow-y: auto; line-height: 1.3; cursor: pointer; }
+
+        /* Split-screen layout for MAP and CAM tabs */
+        .split-view {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100%;
+        }
+        .split-main {
+            width: 100%;
+        }
+        .split-controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .landscape-only { display: none; }
+
+        @media (orientation: landscape) {
+            .split-view {
+                flex-direction: row;
+            }
+            .split-main {
+                flex: 2; /* 66% width */
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            .split-controls {
+                flex: 1; /* 33% width */
+                height: 100%;
+                border-left: 2px dashed var(--pip-color-dim);
+                padding-left: 15px;
+                overflow-y: auto;
+            }
+            
+            /* Expand the Map/Video to completely fill their new 66% flex box */
+            #map-container { height: 100% !important; min-height: 0; }
+            #cam-container { height: 100% !important; min-height: 0; margin-bottom: 0; }
+            
+            .landscape-only { 
+                display: block; 
+                margin-bottom: 10px;
+                border-bottom: 1px solid var(--pip-color-dim);
+                padding-bottom: 5px;
+            }
+            
+            /* Hide non-essential headers to maximize vertical space */
+            #tab-map > h2, #tab-map > p { display: none; }
+            #tab-cam > h2, #tab-cam > p { display: none; }
+        }
+
+/* ============ CAM SPLIT LAYOUT (v0.24) ============ */
+/* Portrait: sensor feed on top, controls docked below */
+.cam-split {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+.cam-media-pane {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+}
+.cam-media-pane #cam-container {
+    margin-bottom: 0 !important;
+}
+.cam-controls-pane {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.cam-controls-pane .pip-btn {
+    margin-top: 0;
+    height: 46px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+#cam-save-controls .pip-btn { height: 46px; }
+
+/* Landscape: 4:3 sensor pane on the LEFT, all controls visible on the RIGHT (mirrors MAP tab) */
+@media (orientation: landscape) and (max-height: 600px) {
+    .cam-controls-pane .pip-btn { height: 38px; font-size: 1rem; }
+    #cam-save-controls .pip-btn { height: 38px; font-size: 1rem; }
+}
+@media (orientation: landscape) {
+    .cam-split {
+        flex-direction: row;
+        gap: 15px;
+    }
+    .cam-media-pane {
+        flex: 0 0 auto;
+        height: 100%;
+        aspect-ratio: 4 / 3;
+        max-width: 100%;
+        min-height: 0;
+    }
+    .cam-controls-pane {
+        flex: 1 1 auto;
+        min-width: 170px;
+        height: 100%;
+        overflow-y: auto;
+        border-left: 2px dashed var(--pip-color-dim);
+        padding-left: 15px;
+    }
+}
+
+/* ============ PRE-BOOT CALIBRATION FIT (v0.26) ============ */
+/* Universal overflow safety so the box can never hard-clip */
+#pre-boot-box {
+    max-height: 94vh;
+    overflow-y: auto;
+}
+
+/* Landscape compaction: small phones (~360px tall) were clipping top/bottom */
+@media (orientation: landscape) and (max-height: 600px) {
+    #pre-boot-overlay { padding: 8px; }
+    #pre-boot-box { padding: 12px !important; max-height: 96vh; }
+    #pre-boot-box h2 { margin-bottom: 8px !important; padding-bottom: 6px !important; font-size: 1.2rem; }
+    #pre-boot-box p { margin-bottom: 12px !important; font-size: 1rem !important; line-height: 1.2 !important; }
+    #pre-boot-box > div { gap: 8px !important; margin-bottom: 12px !important; }
+    #pre-boot-box .pip-btn { font-size: 1.1rem !important; padding: 6px 10px !important; margin-top: 0 !important; }
+}
+
+/* ============ THEME TINT VARIABLES (v0.27) ============ */
+:root {
+    --pip-rgb: 26, 255, 128;
+    --cam-filter: sepia(100%) hue-rotate(85deg) saturate(300%) brightness(0.8) contrast(1.8);
+    --tile-filter: sepia(100%) hue-rotate(70deg) saturate(600%) brightness(1.1) contrast(1.2);
+}
+
+/* ============ SENSOR / SCANNER THEME TINT (v0.27) ============ */
+#cam-video, #cam-canvas { filter: var(--cam-filter); }
+
+/* Theme the html5-qrcode injected UI + feed (was raw standard colour) */
+#qr-reader { background: transparent; }
+#qr-reader video { filter: var(--cam-filter); }
+#qr-reader a, #qr-reader span, #qr-reader div, #qr-reader select {
+    color: var(--pip-color) !important;
+    font-family: 'VT323', monospace !important;
+}
+#qr-reader select { background: var(--pip-bg) !important; border: 1px solid var(--pip-color-dim) !important; }
+#qr-reader button {
+    color: var(--pip-color) !important;
+    background: var(--pip-bg) !important;
+    border: 1px solid var(--pip-color) !important;
+    font-family: 'VT323', monospace !important;
+    padding: 4px 12px !important;
+    margin: 6px 4px !important;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+#qr-reader img { filter: var(--cam-filter); }
+
+/* ============ DATABANK TILES (v0.27) ============ */
+.photo-tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+}
+.photo-tile {
+    border: 1px solid var(--pip-color-dim);
+    height: 90px; /* fixed height: aspect-ratio unsupported on older WebKit = collapsed tiles */
+    overflow: hidden;
+    cursor: pointer;
+    background: #000;
+    padding: 0;
+}
+.photo-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.photo-tile:hover {
+    border-color: var(--pip-color);
+    box-shadow: 0 0 8px var(--pip-color-dim);
+}
+
+/* ============ PORTRAIT COMPANION MODE (v0.33) ============ */
+/* Landscape-first layouts still engage automatically via the orientation media queries
+   above; these rules make PORTrait a first-class citizen (majority of attendees). */
+@media (orientation: portrait) {
+    /* Bigger usable radar in portrait (was hard 300px) */
+    #map-container { height: 44vh !important; min-height: 300px; }
+    /* Databank tiles use the extra column room better */
+    .photo-tile-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+    /* Tighten content gutters on narrow screens */
+    .content-area { padding: 15px; }
+}
+
+/* ============ PORTRAIT KEYBOARD (v0.35) ============ */
+/* Phone-muscle-memory layout landed this version; portrait gets chunkier keys */
+@media (orientation: portrait) {
+    #keyboard-modal .modal-content { max-width: 700px; }
+    #keyboard-modal .vk-btn { padding: 14px 0 !important; font-size: 1.5rem !important; min-width: 28px; }
+    /* v0.37: word keys shrink their WORD to fit the box instead of spilling outside it;
+       punct utility keys stay a narrow fixed share so SPACE/ENTER get the width back.
+       v0.38: basis 38px -> 30px now that '?' makes it FIVE punct keys in the row. */
+    #keyboard-modal .vk-btn.vk-wide { font-size: 1.05rem !important; }
+    #keyboard-modal .vk-btn.vk-sm { flex-basis: 30px; }
+    #vk-keys { gap: 7px !important; }
+    #vk-keys > div { gap: 6px !important; }
+}
+
+/* ============ PORTRAIT SHIELD (v0.41) ============ */
+/* Backstop for when the OS refuses the portrait lock (browser tabs, auto-rotate,
+   Android's nav-bar "rotate app" button, stale WebAPKs): when the device REPORTS a
+   rotated orientation angle, the whole app counter-rotates so it still READS portrait
+   (engaged by portraitShieldCheck() in app.js via html.plock-* classes). Axis math:
+   body swaps to width:100vh / height:100vw and rotates about a pinned corner so the
+   box exactly refills the rotated viewport; percentage-sized children re-fit
+   naturally. Large vh-sized surfaces get swapped overrides below. The v0.40 lock
+   remains PRIMARY -- when it wins, angle stays 0 and none of this ever triggers. */
+html.plock-90 body,
+html.plock-270 body {
+    position: fixed !important;
+    width: 100vh !important;
+    height: 100vw !important;
+    margin: 0 !important;
+    overflow: hidden;
+}
+html.plock-90 body  { top: 100%; left: 0;    transform-origin: left top; transform: rotate(-90deg); }
+html.plock-270 body { top: 0;    left: 100%; transform-origin: left top; transform: rotate(90deg); }
+/* viewport-unit axis swap for the biggest vh-sized surfaces */
+html.plock-90 #map-container, html.plock-270 #map-container { height: 44vw !important; min-height: 300px; }
+html.plock-90 .modal-content, html.plock-270 .modal-content { max-height: 90vw; }
+html.plock-90 #pre-boot-box,  html.plock-270 #pre-boot-box  { max-height: 96vw !important; }
+
+        /* v0.55: pulsing mail envelope on the MAIL nav tab when transmissions wait */
+        .mail-pip { color: #ffb642; text-shadow: 0 0 6px #ffb642; animation: mailPipPulse 1.6s ease-in-out infinite; }
+        @keyframes mailPipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* v0.56: blinking HUD warning glyph (satellite unstable -- holding last fix) */
+        .hud-blink { animation: hudBlink 0.9s steps(2, start) infinite; }
+        @keyframes hudBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+        /* v0.57: map camera overlay buttons — compact glyphs positioned on the map surface */
+        .map-overlay-btn {
+            width: 36px; height: 36px; border-radius: 4px;
+            border: 1px solid var(--pip-color); background: rgba(5, 16, 5, 0.9);
+            color: var(--pip-color); font-size: 1.3rem; font-family: 'VT323', monospace;
+            text-shadow: 0 0 5px var(--pip-color); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 6px var(--pip-color-dim);
+        }
+        .map-overlay-btn:active { background: var(--pip-color); color: var(--pip-bg); text-shadow: none; }
+
+/* ============ PDA THEME (v0.69) ============ */
+/* S.T.A.L.K.E.R. PDA style — dev-only activation via theme cycle */
+body.pda-theme {
+    background: #1a1a1a !important;
+    font-family: 'Courier New', 'Consolas', monospace !important;
+}
+
+/* Override CRT scanlines for PDA theme */
+body.pda-theme::before,
+body.pda-theme::after {
+    display: none !important;
+}
+
+/* Header styling */
+body.pda-theme .header {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+    box-shadow: none !important;
+}
+
+body.pda-theme .header-title {
+    letter-spacing: 2px !important;
+    text-shadow: none !important;
+}
+
+/* Tab navigation */
+body.pda-theme .nav-tabs {
+    border-bottom: 2px solid #4a4a4a !important;
+}
+
+body.pda-theme .nav-item {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+    border-bottom: none !important;
+    text-shadow: none !important;
+    letter-spacing: 1px !important;
+    opacity: 0.6 !important;
+}
+
+body.pda-theme .nav-item.active {
+    background: #1a1a1a !important;
+    border-color: var(--pip-color) !important;
+    opacity: 1 !important;
+}
+
+/* Content boxes */
+body.pda-theme .content-area {
+    background: transparent !important;
+}
+
+body.pda-theme .sub-nav {
+    border-bottom: 2px solid #4a4a4a !important;
+}
+
+body.pda-theme .sub-nav-item {
+    text-shadow: none !important;
+    letter-spacing: 1px !important;
+}
+
+/* Buttons */
+body.pda-theme .pip-btn,
+body.pda-theme .theme-btn {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+    text-shadow: none !important;
+    letter-spacing: 1px !important;
+    box-shadow: none !important;
+}
+
+body.pda-theme .pip-btn:hover,
+body.pda-theme .theme-btn:hover {
+    background: #4a4a4a !important;
+    border-color: var(--pip-color) !important;
+}
+
+body.pda-theme .pip-btn:active,
+body.pda-theme .theme-btn:active {
+    background: var(--pip-color) !important;
+    color: #1a1a1a !important;
+}
+
+/* List items */
+body.pda-theme .item-row {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+    margin-bottom: 8px !important;
+}
+
+body.pda-theme .item-row:hover {
+    border-color: var(--pip-color) !important;
+    background: #2a2a2a !important;
+}
+
+/* Form inputs */
+body.pda-theme .pip-input {
+    background: #1a1a1a !important;
+    border: 2px solid #4a4a4a !important;
+    text-shadow: none !important;
+}
+
+body.pda-theme .pip-input:focus {
+    border-color: var(--pip-color) !important;
+}
+
+/* Status bars */
+body.pda-theme .hp-bar,
+body.pda-theme .rads-bar,
+body.pda-theme .ap-bar {
+    border: 2px solid #4a4a4a !important;
+    background: #1a1a1a !important;
+}
+
+body.pda-theme .hp-fill,
+body.pda-theme .ap-fill {
+    box-shadow: none !important;
+}
+
+body.pda-theme .rads-fill {
+    box-shadow: none !important;
+}
+
+/* Map container */
+body.pda-theme #map-container {
+    border: 2px solid #4a4a4a !important;
+    background: #1a1a1a !important;
+}
+
+/* Map overlay buttons */
+body.pda-theme .map-overlay-btn {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+body.pda-theme .map-overlay-btn:hover {
+    border-color: var(--pip-color) !important;
+}
+
+/* Modals */
+body.pda-theme .modal-content {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+    box-shadow: none !important;
+}
+
+/* Warning/info boxes */
+body.pda-theme .warning-box {
+    background: #1a1a1a !important;
+    border: 2px solid var(--pip-color-dim) !important;
+}
+
+body.pda-theme .info-box {
+    background: #1a1a1a !important;
+    border: 2px solid #4a4a4a !important;
+}
+
+/* Glowing One effect */
+body.pda-theme .glowing-one {
+    border-color: var(--pip-color) !important;
+    box-shadow: 0 0 10px var(--pip-color) !important;
+}
+
+/* Mail pip animation override */
+body.pda-theme .mail-pip {
+    text-shadow: none !important;
+    animation: none !important;
+}
+
+/* HUD blink override */
+body.pda-theme .hud-blink {
+    animation: none !important;
+}
+
+/* Vault boy container */
+body.pda-theme .vault-boy-container {
+    border: 2px solid #4a4a4a !important;
+    background: #2a2a2a !important;
+}
+
+/* Photo tiles */
+body.pda-theme .photo-tile {
+    border: 2px solid #4a4a4a !important;
+}
+
+body.pda-theme .photo-tile:hover {
+    border-color: var(--pip-color) !important;
+}
+
+/* Radio stations */
+body.pda-theme .radio-station {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+    margin-bottom: 8px !important;
+}
+
+body.pda-theme .radio-station:hover,
+body.pda-theme .radio-station.playing {
+    border-color: var(--pip-color) !important;
+    background: #2a2a2a !important;
+}
+
+/* Keyboard */
+body.pda-theme #keyboard-modal .modal-content {
+    background: #2a2a2a !important;
+    border: 2px solid #4a4a4a !important;
+}
+
+body.pda-theme .vk-btn {
+    background: #1a1a1a !important;
+    border: 2px solid #4a4a4a !important;
+    text-shadow: none !important;
+}
+
+body.pda-theme .vk-btn:hover {
+    background: #4a4a4a !important;
+    border-color: var(--pip-color) !important;
+}
+
+/* Quest objectives */
+body.pda-theme .quest-objective {
+    border-left: 2px solid #4a4a4a !important;
+}
+
+/* Footer */
+body.pda-theme .footer {
+    border-top: 2px solid #4a4a4a !important;
+    background: #2a2a2a !important;
+}
+
+/* Scrollbar styling for PDA theme */
+body.pda-theme ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body.pda-theme ::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+body.pda-theme ::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border: 1px solid #2a2a2a;
+}
+
+body.pda-theme ::-webkit-scrollbar-thumb:hover {
+    background: var(--pip-color);
+}

@@ -1,0 +1,148 @@
+{
+  "rules": {
+    "wastelanders": {
+      ".read": true,
+      "$uid": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name', 'lat', 'lng', 'timestamp'])",
+        "name":      { ".validate": "newData.isString() && newData.val().length <= 24" },
+        "lat":       { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+        "lng":       { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+        "timestamp": { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "hp":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+        "rads":      { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+        "mutations": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" },
+        "glowingOne": { ".validate": "newData.isBoolean()" },
+        "$other":    { ".validate": false }
+      }
+    },
+    "mail": {
+      ".read": true,
+      "$uid": {
+        "$mailKey": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['type', 'from', 'fromName', 'ts', 'payload'])",
+          "type":      { ".validate": "newData.isString() && (newData.val() == 'msg' || newData.val() == 'quest' || newData.val() == 'item' || newData.val() == 'handshake')" },
+          "from":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "fromName":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+          "ts":        { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+          "payload":   { ".validate": true },
+          "claimed":   { ".validate": "newData.isBoolean()" },
+          "declined":  { ".validate": "newData.isBoolean()" },
+          "fulfilled": { ".validate": "newData.isBoolean()" },
+          "$other":    { ".validate": false }
+        }
+      }
+    },
+    "sharedpins": {
+      ".read": true,
+      "$pinId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['label', 'lat', 'lng', 'ts'])",
+        "label":     { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "lat":       { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+        "lng":       { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+        "ts":        { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "from":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "fromName":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "icon":      { ".validate": "newData.isString() && newData.val().length <= 24" },
+        "permanent": { ".validate": "newData.isBoolean()" },
+        "$other":    { ".validate": false }
+      }
+    },
+    "pariahs": {
+      ".read": true,
+      "$uid": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name', 'ts'])",
+        "name":      { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "ts":        { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "$other":    { ".validate": false }
+      }
+    },
+    "radzones": {
+      ".read": true,
+      "$zoneId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['label', 'lat', 'lng', 'ts'])",
+        "label":     { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "lat":       { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+        "lng":       { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+        "ts":        { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "kind":      { ".validate": "newData.isString() && (newData.val() == 'hot' || newData.val() == 'med' || newData.val() == 'decon')" },
+        "radius":    { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 200" },
+        "$other":    { ".validate": false }
+      }
+    },
+    "radio": {
+      ".read": true,
+      "$sid": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['epoch'])",
+        "epoch":     { ".validate": "newData.isNumber() && newData.val() > 1735689600000 && newData.val() < 20000000000000" },
+        "$other":    { ".validate": false }
+      }
+    },
+    "announcements": {
+      ".read": true,
+      "latest": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['text', 'from', 'ts'])",
+        "text":      { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140" },
+        "from":      { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "ts":        { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "$other":    { ".validate": false }
+      },
+      "$other": { ".validate": false }
+    },
+    "world": {
+      ".read": true,
+      "starchedUnlocked": {
+        ".write": true,
+        ".validate": "newData.isBoolean()"
+      },
+      "$other": { ".validate": false }
+    },
+    "globalContracts": {
+      ".read": true,
+      "$contractId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['title', 'issuerUid', 'issuerName', 'type', 'status', 'createdAt'])",
+        "title":       { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+        "description": { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "issuerUid":   { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "issuerName":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "type":        { ".validate": "newData.isString() && (newData.val() == 'first' || newData.val() == 'many' || newData.val() == 'timed')" },
+        "reward":      { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "expiresAt":   { ".validate": "newData.isNumber() || newData.val() == null" },
+        "status":      { ".validate": "newData.isString() && (newData.val() == 'open' || newData.val() == 'completed' || newData.val() == 'cancelled')" },
+        "completedBy": { ".validate": "newData.isString() || newData.val() == null" },
+        "verifiedBy":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "createdAt":   { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "$other":      { ".validate": false }
+      }
+    },
+    "bounties": {
+      ".read": true,
+      "$bountyId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['targetUid', 'targetName', 'issuerUid', 'issuerName', 'status', 'createdAt'])",
+        "targetUid":     { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "targetName":    { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "issuerUid":     { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "issuerName":    { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "reason":        { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "reward":        { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "expiresAt":     { ".validate": "newData.isNumber() || newData.val() == null" },
+        "status":        { ".validate": "newData.isString() && (newData.val() == 'open' || newData.val() == 'claimed' || newData.val() == 'cancelled')" },
+        "claimedBy":     { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "claimedByName": { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "claimedAt":     { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "verifiedBy":    { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "createdAt":     { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "$other":        { ".validate": false }
+      }
+    },
+    "$other": { ".read": false, ".write": false }
+  }
+}

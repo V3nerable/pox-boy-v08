@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#051005">
+    <title>Pip-Boy Event App</title>
+    
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <!-- Pre-16.4 iOS home-screen mode + status bar theming -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Leaflet Free Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- QR Code Generation and Scanning Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <!-- Firebase SDK (Live Tracking) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, set, get, remove, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5Uczvj78XsIsykhlasSYaMcPBO2WNvxs",
+            authDomain: "pox-satellite.firebaseapp.com",
+            databaseURL: "https://pox-satellite-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "pox-satellite",
+            storageBucket: "pox-satellite.firebasestorage.app",
+            messagingSenderId: "190332123185",
+            appId: "1:190332123185:web:2818925807604d0039bd10"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getDatabase(app);
+        window.firebaseSet = set;
+        window.firebaseRef = ref;
+        window.firebaseOnValue = onValue;
+        window.firebaseOnDisconnect = onDisconnect;
+        window.firebaseGet = get;
+        window.firebaseRemove = remove;
+    </script>
+</head>
+<body class="crt">
+
+    <div class="header">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                <span class="header-title" id="main-os-title">POX-BOY 3026</span>
+                <span style="font-size: 0.8rem; opacity: 0.5; flex-shrink: 0;">v0.81</span>
+                <span style="opacity: 0.5;">|</span>
+                <span id="pip-clock" style="font-size: 0.9rem; opacity: 0.8; white-space: nowrap;"></span>
+            </div>
+            <div id="hud-strip" style="display: flex; gap: 6px; align-items: center; flex-shrink: 0; white-space: nowrap;">
+                <span id="pip-batt" style="font-size: 0.85rem; opacity: 0.8; display: none;"></span>
+                <span id="hud-sat" style="font-size: 0.95rem; opacity: 0.3; color: var(--pip-color-dim); text-shadow: 0 0 5px currentColor;">⌖</span>
+                <span id="hud-radio" style="font-size: 0.95rem; display: none; text-shadow: 0 0 5px currentColor;">♪</span>
+            </div>
+        </div>
+        <div class="header-controls">
+        </div>
+    </div>
+
+    <!-- MAIN NAVIGATION -->
+    <!-- v0.56: Overseer wire banner -- persists under the header until dismissed -->
+    <div id="wire-banner" onclick="dismissWire()" style="display: none; position: relative; border: 2px dashed #ffb642; color: #ffb642; text-shadow: 0 0 6px #ffb642; padding: 8px 34px 8px 10px; margin: 4px 10px; font-size: 0.95rem; cursor: pointer; background: rgba(20, 12, 0, 0.6);">📣 <span id="wire-banner-text"></span><span style="position: absolute; right: 10px; top: 7px; opacity: 0.75;">[X]</span></div>
+
+    <div class="nav-tabs">
+        <div class="nav-item active" onclick="switchMainTab('stat')">STAT</div>
+        <div class="nav-item" id="mail-navitem" onclick="switchMainTab('mail')">MAIL</div>
+        <div class="nav-item" onclick="switchMainTab('data')">DATA</div>
+        <div class="nav-item" onclick="switchMainTab('map')">MAP</div>
+        <div class="nav-item" onclick="switchMainTab('cam')">CAM</div>
+        <div class="nav-item" onclick="switchMainTab('radio')">RADIO</div>
+    </div>
+
+    <div class="content-area">
+        <!-- ================= STAT TAB ================= -->
+        <div id="tab-stat" class="tab-content active">
+            <div class="sub-nav" id="stat-sub-nav">
+                <div class="sub-nav-item active" onclick="switchSubTab('stat', 'status')">STATUS</div>
+                <div class="sub-nav-item" onclick="switchSubTab('stat', 'special')">S.P.E.C.I.A.L.</div>
+                <div class="sub-nav-item" onclick="switchSubTab('stat', 'stats')">STATS</div>
+                <div class="sub-nav-item" onclick="switchSubTab('stat', 'factions')">FACTIONS</div>
+                <div class="sub-nav-item" id="overseer-nav-item" onclick="switchSubTab('stat', 'overseer')" style="display:none;">OVERSEER</div>
+                <div class="sub-nav-item" onclick="switchSubTab('stat', 'options')">OPTIONS</div>
+            </div>
+
+            <!-- STATUS -->
+            <div id="sub-stat-status" class="sub-tab-content active">
+                <div class="vault-boy-container" id="vault-boy-container" onclick="openAvatarPicker()" style="cursor:pointer; position:relative;">
+                    <!-- v0.50: vault-boy graphic = a shot from YOUR databank (pipboy-avatarimg);
+                         status overlays (med ✚ / field ☢ / ≥250-rad static) drawn over it -->
+                    <div id="vb-img-wrap" style="position:relative; width:180px; height:180px; display:none;">
+                        <img id="vb-img" alt="" style="width:100%; height:100%; object-fit:cover; border:1px solid var(--pip-color); box-shadow:0 0 10px var(--pip-color-dim);">
+                        <div id="vb-fx" style="position:absolute; inset:0; pointer-events:none;"></div>
+                    </div>
+                    <span id="vb-default" style="opacity:0.6; text-align:center;">[ VAULT BOY GRAPHIC HERE ]<br><span style="font-size:0.9rem;">TAP TO SET FROM DATABANK</span></span>
+                    <!-- v0.81: Starched Genes DNA strand lock indicator -->
+                    <span id="vb-starched" style="display:none; position:absolute; top:4px; right:4px; font-size:1.2rem; color:#ffb642; text-shadow:0 0 6px #ffb642;" title="STARCHED GENES ACTIVE">🧬🔒</span>
+                </div>
+                <p id="stat-name-display" style="text-align: center; font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;">NAME: UNKNOWN</p>
+                <p style="text-align: center; opacity: 0.8; margin-bottom: 15px;">LVL 1 - INITIATE</p>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                    <div style="font-weight: bold;">HEALTH / RADS</div>
+                    <div style="font-weight: bold; font-size: 0.9rem;" id="status-hp-val">100 HP | <span style="color: #ff3333;">0 RADS</span></div>
+                </div>
+                
+                <!-- Unified HP / RADS Bar -->
+                <div style="width: 100%; height: 15px; border: 1px solid var(--pip-color); display: flex; justify-content: space-between; background: var(--pip-bg); margin-bottom: 15px;">
+                    <div id="status-hp-fill-bar" style="height: 100%; background-color: var(--pip-color); width: 100%; box-shadow: 0 0 5px var(--pip-color);"></div>
+                    <div id="status-rads-fill-bar" style="height: 100%; background-color: #ff3333; width: 0%; box-shadow: 0 0 5px #ff3333;"></div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--pip-color-dim); padding-bottom: 5px; margin-bottom: 5px;">
+                    <div style="font-weight: bold;">ACTION POINTS</div>
+                    <div style="font-weight: bold;" id="status-ap-val">100 / 100</div>
+                </div>
+                
+                <!-- v0.81: RADIATION LEVEL row removed — already shown in HP/RADS bar + footer -->
+            </div>
+
+            <!-- SPECIAL (v0.81: merged with SKILLS + PERKS — one scrollable page) -->
+            <div id="sub-stat-special" class="sub-tab-content">
+                <h2>ATTRIBUTES</h2><br>
+                <div class="special-list" id="special-list-display">
+                    <!-- Populated by JS -->
+                </div>
+                <h2 style="margin-top: 25px;">SURVIVAL SKILLS</h2><br>
+                <div class="skills-list" id="skills-list-display">
+                    <!-- Populated by JS -->
+                </div>
+                <h2 style="margin-top: 25px;">PERKS</h2><br>
+                <div id="perks-list-display">
+                    <!-- Populated by JS -->
+                </div>
+                <!-- v0.81: MUTATIONS — active mutations list (below perks, inside SPECIAL scroll) -->
+                <div id="mutations-section" style="margin-top: 25px; display: none;">
+                    <h2 style="color: #ff9a3c; text-shadow: 0 0 6px #ff9a3c;">☢ MUTATIONS</h2><br>
+                    <div id="mutations-list-display">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- SKILLS and PERKS removed as standalone tabs (v0.81: merged into SPECIAL above) -->
+
+            <!-- STATS (v0.53: relocated from DATA; hosts OVERSEER pariah/zone panels) -->
+            <div id="sub-stat-stats" class="sub-tab-content">
+                <div id="stats-general">
+                    <h2>GENERAL STATS</h2><br>
+                    <p id="fs-field-status" style="color: inherit;">FIELD STATUS: OPEN WASTES</p>
+                    <p>LOCATIONS DISCOVERED: <span id="fs-locations">1</span></p>
+                    <p>DAYS PASSED: <span id="fs-days">0</span></p>
+                    <p>QUESTS COMPLETED: <span id="fs-quests">0</span></p>
+                    <p>WASTELANDERS MET: <span id="fs-wastelanders">0</span></p>
+                    <p>TRANSMISSIONS SENT: <span id="fs-tx-sent">0</span></p>
+                    <p>PHOTOS ARCHIVED: <span id="fs-photos">0</span></p>
+                </div>
+                <div id="stats-wild" style="margin-top: 20px; border-top: 1px dashed var(--pip-color-dim); padding-top: 15px;">
+                    <h2 style="color: #ffb642; text-shadow: 0 0 6px #ffb642;">WASTELAND RECORD</h2><br>
+                    <p>TOTAL RADS ABSORBED: <span id="fs-rads-total" style="color: #ff3333;">0</span></p>
+                    <p>DISTANCE TRAVELLED: <span id="fs-distance">0.0 KM</span></p>
+                    <p>QUESTS COMPLETED: <span id="fs-quests-completed" style="color: #5fc98e;">0</span></p>
+                    <p>QUESTS ABANDONED: <span id="fs-quests-abandoned" style="color: #ff3333;">0</span></p>
+                    <p>STEALS: <span id="fs-steals" style="color: #ffb642;">0</span></p>
+                    <p>FETCHES: <span id="fs-fetches" style="color: #ffb642;">0</span></p>
+                    <p>ASSISTS: <span id="fs-assists" style="color: #ffb642;">0</span></p>
+                    <p>TIMES NEAR DEATH: <span id="fs-neardth" style="color: #ff3333;">0</span></p>
+                    <p>ENCLAVE MARCHES ENDURED: <span id="fs-marches">0</span></p>
+                    <p>PHOTOGRAPHS REGRETTED: <span id="fs-regret">0</span></p>
+                </div>
+                <!-- v0.81: STARCHED GENES player unlock button (shown when Overseer enables globally) -->
+                <div id="starched-unlock-section" style="display:none; margin-top:20px; border-top:1px dashed var(--pip-color-dim); padding-top:15px;">
+                    <button class="pip-btn" id="starched-unlock-btn" onclick="unlockStarchedGenes()" style="border-color:#ffb642; color:#ffb642; border-style:dashed;">[🧬 UNLOCK STARCHED GENES]</button>
+                    <p style="font-size:0.85rem; opacity:0.7; margin-top:8px; line-height:1.4;">LOCK YOUR MUTATIONS IN PLACE. DECONTAMINATION STATIONS CANNOT STRIP THEM. ONE-TIME UNLOCK — PERMANENT.</p>
+                </div>
+            </div>
+
+            <!-- v0.81: OVERSEER tab — all Overseer controls except radio (dev-mode only) -->
+            <div id="sub-stat-overseer" class="sub-tab-content">
+                <div id="overseer-pariahs" style="display:none;"></div>
+            </div>
+
+            <!-- FACTIONS (v0.81: moved from DATA to STAT) -->
+            <div id="sub-stat-factions" class="sub-tab-content">
+                <h2>WASTELAND FACTIONS</h2><br>
+                <div id="factions-list-display">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- OPTIONS (v0.81: moved from DATA to STAT) -->
+            <div id="sub-stat-options" class="sub-tab-content">
+                <h2>APP OPTIONS</h2><br>
+                <button class="pip-btn" id="options-fs-btn" onclick="toggleFullscreen()" style="border-style: dashed;">[FULLSCREEN]</button>
+                <button class="pip-btn" id="options-size-btn" onclick="cycleSize()" style="border-style: dashed;">[SIZE: SHRINK 2]</button>
+                <button class="pip-btn" id="options-theme-btn" onclick="cycleTheme()" style="border-style: dashed;">[THEME: GREEN]</button>
+                <button class="pip-btn" id="options-export-btn" onclick="cycleAutoExport()" style="border-style: dashed;">[AUTO-EXPORT: OFF]</button>
+                <button class="pip-btn" id="options-ping-btn" onclick="cycleMailPing()" style="border-style: dashed;">[MAIL PING: ON]</button>
+                <button class="pip-btn" id="options-pingtest-btn" onclick="testMailPing()" style="border-style: dashed;">[ TEST PING ]</button>
+                <button class="pip-btn" id="options-text-btn" onclick="cycleTextSize()" style="border-style: dashed;">[TEXT: NORMAL]</button>
+                <button class="pip-btn" id="options-nmsg-btn" onclick="cycleNotify('msg','options-nmsg-btn','MESSAGES')" style="border-style: dashed;">[NOTIFY MESSAGES: ON]</button>
+                <button class="pip-btn" id="options-ncon-btn" onclick="cycleNotify('contract','options-ncon-btn','CONTRACTS')" style="border-style: dashed;">[NOTIFY CONTRACTS: ON]</button>
+                <button class="pip-btn" id="options-wire-btn" onclick="cycleWireAlerts()" style="border-style: dashed;">[WIRE ALERTS: ON]</button>
+                <button class="pip-btn" id="options-nlnk-btn" onclick="cycleNotify('link','options-nlnk-btn','LINKS')" style="border-style: dashed;">[NOTIFY LINKS: ON]</button>
+                <button class="pip-btn" id="options-vibrate-btn" onclick="cycleVibrate()" style="border-style: dashed;">[VIBRATE: ON]</button>
+                <button class="pip-btn" id="options-scrambler-btn" onclick="toggleScrambler()" style="border-style: dashed; border-color: #ffb642; color: #ffb642;">[BEACON SCRAMBLER: OFF]</button>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 15px; line-height: 1.4;">PADDING cycles MAX / SHRINK 1 / SHRINK 2 and persists. THEME tints the phosphor, map and optics. AUTO-EXPORT also files every shot to your gallery-indexed download folder the moment it's taken. MAIL PING buzzes the OS on new transmissions (silent while you're already reading mail). TEXT cycles font size NORMAL / LARGE / XL and persists. THIS UNIT IS PORTRAIT-ONLY: the display re-aligns itself automatically on any device that lets it. FULLSCREEN works on any device that supports it — on iPhone it lives behind "ADD TO HOME SCREEN" instead. Hidden when the OS already locks immersion. NOTIFY MESSAGES / CONTRACTS / LINKS choose which transmission alerts toast and ping — LINKS off parks datacard scans quietly as a MAIL tab row. BEACON SCRAMBLER makes every other unit see your dot at a fixed decoy site (long-press the map > SET DECOY SITE to move it) — handy for pre-event testing; your own rads, zones and healing still run off your REAL position. Long messages: the keyboard field stretches as you type (ENTER still commits), and tapping any TRANSMISSIONS row opens the full text with its photo. WIRE ALERTS push OVERSEER announcements to this device's OS notices; the amber banner up top carries the latest wire until you tap it away. The two header glyphs are your signal strip: ♪ = radio live (amber when synced), ⌖ = satellite lock (amber locked, red-blink holding, dim off).</p>
+            </div>
+        </div>
+
+        <!-- ================= MAIL TAB (v0.53: promoted from DATA sub-tab; INV retired) ================= -->
+        <div id="tab-mail" class="tab-content">
+            <button class="theme-btn" onclick="openRecipientPicker()" style="width: 100%; border-style: dashed; font-size: 1.1rem; padding: 10px; margin-bottom: 15px;">[✉ SEND NEW MESSAGE]</button>
+            <div id="mail-container">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- ================= DATA TAB ================= -->
+        <div id="tab-data" class="tab-content">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="theme-btn" onclick="startQRScanner()" style="flex: 1; border-style: dashed; font-size: 1.1rem; padding: 10px;">[SCAN TRANSFER]</button>
+                <button class="theme-btn" onclick="openDatacard()" style="flex: 1; border-style: dashed; font-size: 1.1rem; padding: 10px;">[MY DATACARD]</button>
+            </div>
+            <div class="sub-nav" id="data-sub-nav" style="flex-wrap: wrap; column-gap: 15px; row-gap: 6px;">
+                <div class="sub-nav-item active" onclick="switchSubTab('data', 'quests')">QUESTS</div>
+                <div class="sub-nav-item" onclick="switchSubTab('data', 'contracts')">CONTRACTS</div>
+                <div class="sub-nav-item" onclick="switchSubTab('data', 'wastelanders')">WASTELANDERS</div>
+            </div>
+
+            <!-- APP OPTIONS moved to STAT > OPTIONS (v0.81) -->
+
+            <!-- CONTRACTS (v0.44): quests YOU issued, with live recipient statuses -->
+            <div id="sub-data-contracts" class="sub-tab-content">
+                <h2>ISSUED CONTRACTS</h2><br>
+                <div id="contracts-list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- QUESTS -->
+            <div id="sub-data-quests" class="sub-tab-content active">
+                <div class="sub-nav" id="quest-sub-nav" style="flex-wrap: wrap; column-gap: 15px; row-gap: 6px; margin-bottom: 15px;">
+                    <div class="sub-nav-item active" onclick="switchQuestTab('direct')">DIRECT</div>
+                    <div class="sub-nav-item" onclick="switchQuestTab('global')">GLOBAL</div>
+                    <div class="sub-nav-item" onclick="switchQuestTab('bounties')">BOUNTIES</div>
+                </div>
+                <div id="quest-tab-direct" class="quest-tab-content active">
+                    <!-- Dynamically populated by JS -->
+                </div>
+                <div id="quest-tab-global" class="quest-tab-content" style="display:none;">
+                    <!-- Dynamically populated by JS -->
+                </div>
+                <div id="quest-tab-bounties" class="quest-tab-content" style="display:none;">
+                    <!-- Dynamically populated by JS -->
+                </div>
+            </div>
+
+            <!-- WASTELANDERS MET (Rolodex + link requests) -->
+            <div id="sub-data-wastelanders" class="sub-tab-content">
+                <button class="theme-btn" onclick="openDatacard()" style="width: 100%; border-style: dashed; font-size: 1.2rem; margin-bottom: 15px; padding: 10px;">[BROADCAST MY DATACARD]</button>
+                <div id="wastelanders-list">
+                    <!-- Populated by JS -->
+                </div>
+                <h3 style="border-bottom: 1px dashed var(--pip-color-dim); padding-bottom: 5px; margin: 25px 0 10px;">LINK REQUESTS</h3>
+                <div id="linkrequests-list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            
+            <!-- FACTIONS -->
+        </div>
+
+        <!-- ================= MAP TAB ================= -->
+        <div id="tab-map" class="tab-content">
+            <div class="split-view">
+                <div class="split-main" style="position: relative;">
+                    <div id="map-container"></div>
+                    <!-- v0.56: live signal census -- the empty-map question now has a number -->
+                    <div id="map-signals" style="position: absolute; top: 6px; left: 6px; z-index: 800; font-size: 0.75rem; padding: 2px 8px; border: 1px dashed var(--pip-color-dim); background: rgba(5,16,5,0.85); opacity: 0.9;">SIGNALS: --</div>
+                    <!-- v0.81: map camera overlay buttons — compact glyphs in the corner -->
+                    <div id="map-cam-overlay" style="position: absolute; bottom: 8px; right: 8px; z-index: 800; display: flex; gap: 4px;">
+                        <button class="map-overlay-btn" onclick="mapGoMe()" title="Center on me">◎</button>
+                        <button class="map-overlay-btn" onclick="mapFitAll()" title="Fit all">⛶</button>
+                    </div>
+                    <!-- Sticky-select wastelander info card (tap a beacon) -->
+                    <div id="map-user-card" style="display: none; position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 1000; background: rgba(5, 16, 5, 0.95); border: 2px solid var(--pip-color); box-shadow: 0 0 12px var(--pip-color-dim); padding: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="min-width: 0;">
+                                <div id="muc-name" style="font-weight: bold; font-size: 1.3rem;">WASTELANDER</div>
+                                <div id="muc-info" style="font-size: 0.95rem; opacity: 0.8; margin-top: 2px;">--</div>
+                                <div id="muc-vitals" style="display: none;"></div>
+                            </div>
+                            <button class="theme-btn" onclick="deselectBeacon()" style="flex-shrink: 0; margin-left: 10px;">[X]</button>
+                        </div>
+                        <div id="muc-actions" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                            <!-- Injected by JS (contact-gated) -->
+                        </div>
+                    </div>
+                </div>
+                <div class="split-controls">
+                    <h2 class="landscape-only">MAP TOOLS</h2>
+                    <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;">[LONG PRESS MAP TO ADD MARKER]</p>
+                    <button class="theme-btn" id="gps-btn" onclick="toggleGPS()" style="margin-bottom: 10px; width: 100%; border-style: dashed;">[ENABLE GPS TRACKING]</button>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <button class="theme-btn" onclick="openAddWaypointModal()">+ ADD MARKER</button>
+                        <button class="theme-btn" onclick="openRemoveWaypointModal()" style="border-style: dashed;">- REMOVE MARKER</button>
+                    </div>
+                </div>
+            </div>
+            <!-- v0.81: scrollable live wastelanders list below map -->
+            <div id="wastelanders-list-map" style="margin-top: 0; max-height: 200px; overflow-y: auto; padding-top: 3px;">
+                <h3 style="font-size: 1rem; margin-bottom: 5px;">LIVE WASTELANDERS</h3>
+                <div id="wastelanders-scroll" style="font-size: 0.9rem;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <!-- v0.81: cold wastelanders list below live wastelanders -->
+            <div id="cold-wastelanders-list-map" style="margin-top: 3px; max-height: 150px; overflow-y: auto; padding-top: 3px;">
+                <h3 style="font-size: 1rem; margin-bottom: 5px; opacity: 0.7;">COLD WASTELANDERS</h3>
+                <div id="cold-wastelanders-scroll" style="font-size: 0.85rem; opacity: 0.7;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+        <div id="tab-cam" class="tab-content" style="flex-direction: column; height: 100%;">
+            
+            <!-- CAM MENU STATE (Gallery Default) -->
+            <div id="cam-menu-state" style="flex-grow: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--pip-color); padding-bottom: 10px; margin-bottom: 15px; flex-shrink: 0; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="font-size: 1.5rem; margin: 0;">IMAGE DATABANK</h2>
+                    <button class="pip-btn" id="cam-exportall-btn" onclick="exportAllPhotos()" style="margin: 0; padding: 5px 15px; border-style: dashed; font-weight: bold; white-space: nowrap; width: auto; flex-shrink: 0; border-color: #42b6ff; color: #42b6ff;">[⇪ EXPORT ALL]</button>
+                    <button class="pip-btn" id="cam-start-btn" onclick="startCamera()" style="margin: 0; padding: 5px 15px; border-style: dashed; font-weight: bold; white-space: nowrap; width: auto; flex-shrink: 0;">[ POWER ON SENSOR ]</button>
+                </div>
+                
+                <!-- Inline Gallery -->
+                <div id="inline-photo-gallery" style="flex-grow: 1; overflow-y: auto; padding-right: 5px;" class="hide-scroll">
+                    <!-- JS Populated -->
+                </div>
+            </div>
+
+            <!-- CAM ACTIVE STATE -->
+            <div id="cam-active-state" style="display: none; flex-grow: 1; height: 100%; min-height: 0;">
+                <div class="cam-split">
+                    <div class="cam-media-pane">
+                        <div id="cam-container" style="flex-grow: 1; position: relative; width: 100%; min-height: 0; border: 2px dashed var(--pip-color); display: flex; align-items: center; justify-content: center; overflow: hidden; background: #000; margin-bottom: 10px;">
+                            <!-- Increased contrast and lowered brightness/saturation to prevent blowout. Added a slight blur to simulate old tech. -->
+                    <div id="cam-placeholder" style="opacity: 0.6; z-index: 5; text-align: center;">OPTICAL SENSOR OFFLINE<br><span style="font-size: 0.85rem;">[ AWAITING POWER ]</span></div>
+                    <video id="cam-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0;"></video>
+                    <canvas id="cam-canvas" style="display: none; width: 100%; height: 100%; object-fit: contain;"></canvas>
+                            
+                            <!-- CRT Overlay strictly for the camera feed to make it look like a Pip-Boy screen -->
+                            <div id="cam-crt-overlay" class="crt" style="position: absolute; top:0; left:0; right:0; bottom:0; pointer-events: none; display: none; z-index: 10;"></div>
+                            
+                            <!-- Target Reticle overlay -->
+                            <div id="cam-reticle" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border: 2px solid var(--pip-color); border-radius: 50%; display: none; z-index: 11; pointer-events: none; opacity: 0.5;">
+                                <div style="position: absolute; top: 50%; left: -10px; right: -10px; height: 1px; background: var(--pip-color);"></div>
+                                <div style="position: absolute; top: -10px; bottom: -10px; left: 50%; width: 1px; background: var(--pip-color);"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cam-controls-pane">
+                        <h2 class="landscape-only">SENSOR CONTROLS</h2>
+                        <button class="pip-btn" id="cam-snap-btn" onclick="takePhoto()" style="font-weight: bold; border-style: dashed;">[ CAPTURE ]</button>
+                        <button class="pip-btn" id="cam-flip-btn" onclick="flipCamera()" style="font-weight: bold;">↻ FLIP SENSOR</button>
+                        <button class="pip-btn" id="cam-night-btn" onclick="toggleNightMode()" style="font-weight: bold;">◧ NIGHT MODE: OFF</button>
+                        <button class="pip-btn" id="cam-exit-btn" onclick="stopCamera()" style="font-weight: bold; color: #ff3333; border-color: #ff3333;">X POWER OFF</button>
+                        
+                        <div id="cam-save-controls" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px; border-top: 1px dashed var(--pip-color-dim); padding-top: 10px;">
+                            <!-- v0.43: CAPTURE auto-archives instantly -- post-shot = resume or regret -->
+                            <button class="pip-btn" id="cam-next-btn" onclick="resetCamera()" style="margin: 0; border-style: dashed;">TAKE ANOTHER</button>
+                            <button class="pip-btn" id="cam-delete-btn" onclick="deleteLastShot()" style="margin: 0; border-color: #ff3333; color: #ff3333;">DELETE THIS SHOT</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= RADIO TAB ================= -->
+        <div id="tab-radio" class="tab-content">
+            <h2>RADIO STATIONS</h2><br>
+            <div id="radio-now" style="border: 1px dashed var(--pip-color-dim); padding: 8px; margin-bottom: 12px; font-size: 1rem; color: #ffb642; text-shadow: 0 0 5px #ffb642; min-height: 2.2rem;">RADIO OFF</div>
+
+            <!-- v0.53: three dials, fed by radio-stations.json; each loops forever. -->
+            <div class="radio-station" id="rs-gnr" onclick="radioStationTap('gnr')">
+                <span class="radio-indicator">▶</span>
+                <span>CAPITAL WASTELAND RADIO</span>
+                <span class="rs-state" style="margin-left: auto; font-size: 0.75rem; opacity: 0.7;"></span>
+            </div>
+            <div class="radio-station" id="rs-dcr" onclick="radioStationTap('dcr')">
+                <span class="radio-indicator">▶</span>
+                <span>COMMONWEALTH RADIO</span>
+                <span class="rs-state" style="margin-left: auto; font-size: 0.75rem; opacity: 0.7;"></span>
+            </div>
+            <div class="radio-station" id="rs-appa" onclick="radioStationTap('appa')">
+                <span class="radio-indicator">▶</span>
+                <span>APPALACHIA RADIO</span>
+                <span class="rs-state" style="margin-left: auto; font-size: 0.75rem; opacity: 0.7;"></span>
+            </div>
+            <div class="radio-station" id="rs-unknown" onclick="radioStationTap('unknown')">
+                <span class="radio-indicator">▶</span>
+                <span>UNKNOWN TRANSMISSION</span>
+                <span class="rs-state" style="margin-left: auto; font-size: 0.75rem; opacity: 0.7;"></span>
+            </div>
+            <div class="radio-station" id="rs-waste" onclick="radioStationTap('waste')">
+                <span class="radio-indicator">▶</span>
+                <span>W.A.S.T.E FM - Wasteland Audio Slayer Transmission Entertainment</span>
+                <span class="rs-state" style="margin-left: auto; font-size: 0.75rem; opacity: 0.7;"></span>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin: 12px 0;">
+                <button class="pip-btn" onclick="radioNextUi()" style="flex: 1; border-style: dashed;">[▶▶ NEXT TRANSMISSION]</button>
+                <button class="pip-btn" onclick="radioStop()" style="flex: 1; border-style: dashed;">[◼ RADIO OFF]</button>
+            </div>
+
+            <!-- v0.54: Overseer broadcast desk (dev-mode render target) + STATION SYNC toggle -->
+            <div id="radio-overseer" style="display: none;"></div>
+            <button class="pip-btn" id="radio-sync-btn" onclick="radioSyncToggle()" style="width: 100%; border-style: dashed; margin-top: 10px;">[ STATION SYNC: ON ]</button>
+
+            <!-- v0.53: pack downloader — confirm popup quotes true bytes from the manifest -->
+            <button class="pip-btn" id="radio-dl-btn" onclick="radioDownloadMenu()" style="width: 100%; border-style: dashed; border-color: #ffb642; color: #ffb642; margin-top: 10px;">[⇩ DOWNLOAD RADIO CONTENT]</button>
+            <div id="radio-dl-status" style="font-size: 0.85rem; opacity: 0.85; margin-top: 8px; min-height: 1.1rem;"></div>
+            <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 10px; line-height: 1.35;">DOWNLOAD ON WIFI BEFORE THE EVENT — THE PACK CACHES ON THIS UNIT AND PLAYS OFFLINE FOREVER. UNDOWNLOADED STATIONS STREAM WHILE ONLINE ONLY. STATION SYNC (ON BY DEFAULT) LOCKS EVERY UNIT TO THE OVERSEER'S LIVE BROADCAST — SAME TRACK, SAME SECOND. TOGGLE IT OFF TO FREE-RUN YOUR OWN LOOP.</p>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer" style="padding-top: 5px;">
+        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 2px;">
+                <span id="footer-hp-display">HP 100/100</span>
+                <span id="footer-rads-display" style="color: #ff3333; text-shadow: 0 0 5px #ff3333;">RADS 0</span>
+            </div>
+            <!-- The Unified HP / RADS Bar -->
+            <div style="width: 100%; height: 10px; border: 1px solid var(--pip-color); display: flex; justify-content: space-between; background: var(--pip-bg);">
+                <div id="hp-fill-bar" style="height: 100%; background-color: var(--pip-color); width: 100%; box-shadow: 0 0 5px var(--pip-color);"></div>
+                <div id="rads-fill-bar" style="height: 100%; background-color: #ff3333; width: 0%; box-shadow: 0 0 5px #ff3333;"></div>
+            </div>
+        </div>
+
+        <div class="footer-action-container" style="flex-grow: 2; margin: 0 15px;">
+            <button class="theme-btn" id="add-quest-btn" onclick="openAddQuestModal()" style="display: none;">+ ADD QUEST</button>
+            <div id="faction-controls" style="display: none; justify-content: center; gap: 10px;">
+                <button class="theme-btn" onclick="openFactionAuth('ADD')">+ ADD FACTION</button>
+                <button class="theme-btn" onclick="openFactionAuth('EDIT')" style="border-style: dashed;">EDIT FACTION</button>
+            </div>
+            <!-- v0.81: map add/remove marker buttons removed from footer (use long-press map or split-controls sidebar) -->
+            <!-- v0.81: map camera controls moved to overlay on the map itself -->
+            <div id="dev-controls" style="display: none; justify-content: center; gap: 10px;">
+                <button class="theme-btn" onclick="triggerDevReset()" style="border-color: #ff3333; color: #ff3333;">FACTORY RESET</button>
+                <button class="theme-btn" onclick="toggleDevMode()" style="border-color: #42b6ff; color: #42b6ff;">TOGGLE OVERSEER</button>
+            </div>
+        </div>
+
+        <div style="width: 80px; text-align: right; display: flex; flex-direction: column; justify-content: center;">
+            <span id="footer-ap-display" style="font-size: 0.9rem;">AP 100/100</span>
+            <div style="width: 100%; height: 10px; border: 1px solid var(--pip-color); background: var(--pip-bg); margin-top: 2px;">
+                <div style="height: 100%; background-color: var(--pip-color); width: 100%; box-shadow: 0 0 5px var(--pip-color);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MY DATACARD MODAL (v0.31) -->
+    <div id="datacard-modal" class="modal-overlay" style="z-index: 120; background: var(--pip-bg);">
+        <div class="modal-content" style="text-align: center; width: 100%; max-width: 420px;">
+            <h3>MY DATACARD</h3>
+            <p id="datacard-name" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 15px;">UNKNOWN</p>
+            <div id="dc-vitals" style="max-width: 240px; margin: 0 auto 14px;"></div>
+            <p style="font-size: 0.95rem; opacity: 0.8; margin-bottom: 15px;">Have a Wastelander scan this to link frequencies and receive transmissions.</p>
+            <div id="datacard-qr-canvas" style="background: white; padding: 15px; border-radius: 10px; display: inline-block; box-shadow: 0 0 20px var(--pip-color); line-height: 0;"></div>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 20px; border-style: dashed;">CLOSE DATACARD</button>
+        </div>
+    </div>
+
+    <!-- CONTACT SHEET MODAL -->
+    <div id="contact-modal" class="modal-overlay" style="z-index: 120;">
+        <div class="modal-content">
+            <h3 id="contact-name">WASTELANDER</h3>
+            <p id="contact-meta" style="opacity: 0.8; font-size: 0.95rem; margin-bottom: 20px;"></p>
+            <div id="contact-vitals" style="display: none; margin: -8px 0 16px;"></div>
+            <button class="pip-btn" onclick="composeTo('msg')" style="border-style: dashed;">[ MESSAGE ]</button>
+            <button class="pip-btn" onclick="composeTo('quest')" style="border-style: dashed;">[ SEND QUEST ]</button>
+            <button class="pip-btn" onclick="openPhotoPicker(contactUidTarget)" style="border-style: dashed; border-color: #42b6ff; color: #42b6ff;">[ SEND PHOTO ]</button>
+            <button class="pip-btn" onclick="sendDatacardViaMail()" style="border-style: dashed; border-color: #42b6ff; color: #42b6ff;">[ SEND MY DATACARD ]</button>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="pip-btn" onclick="removeActiveContact()" style="flex: 1; border-color: #ff3333; color: #ff3333;">REMOVE CONTACT</button>
+                <button class="pip-btn" onclick="closeModals()" style="flex: 1; border-style: dashed;">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPOSE QUEST MODAL -->
+    <div id="compose-quest-modal" class="modal-overlay" style="z-index: 125;">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h3 id="cq-title">TRANSMIT QUEST</h3>
+            <div class="form-group"><label>QUEST TITLE</label><input type="text" id="cq-name" class="pip-input vk-target" readonly onclick="openVk('cq-name')" placeholder="e.g. Recover the Water Chip"></div>
+            <div class="form-group"><label>BRIEF (OPTIONAL)</label><input type="text" id="cq-brief" class="pip-input vk-target" readonly onclick="openVk('cq-brief')" placeholder="One-line briefing..."></div>
+            <div class="form-group"><label>OBJECTIVES (3 MAX)</label>
+                <input type="text" id="cq-obj1" class="pip-input vk-target" readonly onclick="openVk('cq-obj1')" placeholder="Objective 1" style="margin-bottom: 5px;">
+                <input type="text" id="cq-obj2" class="pip-input vk-target" readonly onclick="openVk('cq-obj2')" placeholder="Objective 2 (optional)" style="margin-bottom: 5px;">
+                <input type="text" id="cq-obj3" class="pip-input vk-target" readonly onclick="openVk('cq-obj3')" placeholder="Objective 3 (optional)">
+            </div>
+            <div class="form-group"><label>REWARD (OPTIONAL)</label><input type="text" id="cq-reward" class="pip-input vk-target" readonly onclick="openVk('cq-reward')" placeholder="e.g. 2 Drink Tickets"></div>
+            <div class="form-group"><label>LOCATION</label><input type="text" id="cq-loc" class="pip-input vk-target" readonly onclick="openVk('cq-loc')" placeholder="e.g. Old radio tower"></div>
+            <div class="form-group"><label>EXPIRATION TIME (Optional)</label><input type="text" id="cq-time" class="pip-input vk-target" readonly onclick="openVk('cq-time')" placeholder="e.g. 18:00 (24h format)"></div>
+            <button class="pip-btn" onclick="transmitQuest()">[ TRANSMIT QUEST ]</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- COMPOSE BOUNTY MODAL (v0.81) -->
+    <div id="compose-bounty-modal" class="modal-overlay" style="z-index: 125;">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h3>POST BOUNTY</h3>
+            <div class="form-group"><label>SELECT TARGET</label>
+                <div id="bounty-target-list" style="max-height: 200px; overflow-y: auto; border: 1px dashed var(--pip-color-dim); padding: 8px;">
+                    <!-- Populated by JS -->
+                </div>
+                <div id="bounty-target-display" style="margin-top: 8px; font-size: 0.9rem; opacity: 0.8;">No target selected</div>
+            </div>
+            <div class="form-group"><label>REASON</label><textarea id="bounty-reason" class="pip-input vk-target grow" readonly onclick="openVk('bounty-reason')" rows="2" placeholder="Reason for bounty..."></textarea></div>
+            <div class="form-group"><label>REWARD (OPTIONAL)</label><input type="text" id="bounty-reward" class="pip-input vk-target" readonly onclick="openVk('bounty-reward')" placeholder="e.g. 100 caps"></div>
+            <div class="form-group"><label>EXPIRES IN (HOURS, OPTIONAL)</label><input type="text" id="bounty-expires" class="pip-input vk-target" readonly onclick="openVk('bounty-expires')" placeholder="e.g. 48 (leave blank for no expiry)"></div>
+            <button class="pip-btn" onclick="submitBountyForm()">[ POST BOUNTY ]</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- COMPOSE GLOBAL CONTRACT MODAL (v0.81) -->
+    <div id="compose-global-contract-modal" class="modal-overlay" style="z-index: 125;">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h3>CREATE GLOBAL CONTRACT</h3>
+            <div class="form-group"><label>CONTRACT TITLE</label><input type="text" id="gc-title" class="pip-input vk-target" readonly onclick="openVk('gc-title')" placeholder="e.g. Retrieve the artifact"></div>
+            <div class="form-group"><label>DESCRIPTION</label><textarea id="gc-desc" class="pip-input vk-target grow" readonly onclick="openVk('gc-desc')" rows="2" placeholder="Contract details..."></textarea></div>
+            <div class="form-group"><label>CONTRACT TYPE</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="pip-btn gc-type-btn" onclick="selectGlobalContractType('first')" style="flex: 1; min-width: 120px;">FIRST TO COMPLETE</button>
+                    <button class="pip-btn gc-type-btn" onclick="selectGlobalContractType('many')" style="flex: 1; min-width: 120px;">MANY CAN COMPLETE</button>
+                    <button class="pip-btn gc-type-btn" onclick="selectGlobalContractType('timed')" style="flex: 1; min-width: 120px;">TIMED</button>
+                </div>
+                <div id="gc-type-display" style="margin-top: 8px; font-size: 0.9rem; opacity: 0.8;">Selected: FIRST TO COMPLETE</div>
+            </div>
+            <div class="form-group"><label>REWARD (OPTIONAL)</label><input type="text" id="gc-reward" class="pip-input vk-target" readonly onclick="openVk('gc-reward')" placeholder="e.g. 50 caps"></div>
+            <div class="form-group"><label>EXPIRES IN (HOURS, OPTIONAL)</label><input type="text" id="gc-expires" class="pip-input vk-target" readonly onclick="openVk('gc-expires')" placeholder="e.g. 24 (leave blank for no expiry)"></div>
+            <button class="pip-btn" onclick="submitGlobalContractForm()">[ CREATE CONTRACT ]</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- COMPOSE MESSAGE MODAL -->
+    <div id="compose-msg-modal" class="modal-overlay" style="z-index: 125;">
+        <div class="modal-content">
+            <h3 id="cm-title">TRANSMIT MESSAGE</h3>
+            <div class="form-group"><label>MESSAGE</label><textarea id="cm-text" class="pip-input vk-target grow" readonly onclick="openVk('cm-text')" rows="1" placeholder="EYES UP. MOVEMENT AT THE RIDGE."></textarea></div>
+            <!-- v0.47: message attachments — a photo from the DATABANK and/or one item
+                 from the LOADOUT can ride the letter -->
+            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                <button class="pip-btn" id="cm-photo-btn" onclick="attachComposerPhoto()" style="flex:1; border-style:dashed; font-size:1rem; margin:0;">[+ PHOTO]</button>
+            </div>
+            <div id="cm-attach-note" style="display:none; font-size:1rem; opacity:0.8; margin-bottom:8px;"></div>
+            <button class="pip-btn" onclick="transmitMsg()">[ SEND TRANSMISSION ]</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- v0.81: quickcam removed (SNAP NOW never worked reliably; too many permission/modal conflicts) -->
+
+    <!-- COMPOSE ITEM MODAL -->
+    <div id="compose-item-modal" class="modal-overlay" style="z-index: 125;">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h3 id="ci-title">TRANSMIT ITEM</h3>
+            <div class="form-group"><label>SELECT ITEM FROM LOADOUT</label>
+                <div id="ci-item-list" style="max-height: 35vh; overflow-y: auto; border: 1px dashed var(--pip-color-dim);"></div>
+            </div>
+            <div class="form-group"><label>QUANTITY</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="theme-btn" onclick="ciStep(-1)" style="font-size: 1.4rem; padding: 5px 12px;">-</button>
+                    <input type="text" id="ci-qty" class="pip-input" value="1" readonly style="text-align: center; cursor: default;">
+                    <button class="theme-btn" onclick="ciStep(1)" style="font-size: 1.4rem; padding: 5px 12px;">+</button>
+                </div>
+            </div>
+            <p style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 10px;">WARNING: ITEM LEAVES YOUR INVENTORY ON TRANSMIT (RETURNED IF DECLINED).</p>
+            <button class="pip-btn" onclick="transmitItem()">[ TRANSMIT ITEM ]</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- v0.43: SELFIE SCREEN-FLASH -- front sensors have no torch, so capturing in
+         NIGHT MODE floods the whole screen pale for a beat as the makeshift light -->
+    <div id="cam-screenflash" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff8f0; opacity: 0.92; z-index: 100002; pointer-events: none;"></div>
+
+    <!-- v0.44: PHOTO PICKER -- choose a databank shot to transmit (two-way links only) -->
+    <div id="photo-pick-modal" class="modal-overlay" style="z-index: 126;">
+        <div class="modal-content" style="max-width: 600px; max-height: 85vh;">
+            <h3 id="pp-title">TRANSMIT PHOTO</h3>
+            <div id="pp-grid" style="overflow-y: auto; max-height: 60vh; margin-bottom: 15px;"></div>
+            <button class="pip-btn" onclick="closePhotoPick()" style="border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- CUSTOM VIRTUAL KEYBOARD MODAL -->
+    <div id="keyboard-modal" class="modal-overlay" style="z-index: 1000; align-items: flex-end; padding: 5px;">
+        <div class="modal-content" style="width: 100%; max-width: 600px; border: 2px solid var(--pip-color); padding: 10px; background: rgba(5, 16, 5, 0.95); margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <input type="text" id="vk-input" class="pip-input vk-target" readonly onclick="openVk('vk-input')" style="flex-grow: 1; margin-right: 10px; font-size: 1.5rem;">
+                <!-- v0.45: growing multi-line deck shown in place of vk-input for long-form
+                     targets (composer). Text auto-wraps; ENTER still commits. -->
+                <textarea id="vk-multi" class="pip-input grow" rows="1" readonly style="display:none; flex-grow: 1; margin-right: 10px; font-size: 1.5rem; overflow-y: auto;"></textarea>
+                <button class="pip-btn" onclick="vkBackspace()" style="width: 60px; font-size: 1.2rem; margin: 0;">⌫</button>
+            </div>
+            
+            <div id="vk-keys" style="display: flex; flex-direction: column; gap: 5px;">
+                <!-- v0.35: phone-standard layout (numbers row + QWERTY + big bottom row), pip skin -->
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="pip-btn vk-btn" onclick="vkPress('1')">1</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('2')">2</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('3')">3</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('4')">4</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('5')">5</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('6')">6</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('7')">7</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('8')">8</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('9')">9</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('0')">0</button>
+                </div>
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="pip-btn vk-btn" onclick="vkPress('Q')">Q</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('W')">W</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('E')">E</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('R')">R</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('T')">T</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('Y')">Y</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('U')">U</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('I')">I</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('O')">O</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('P')">P</button>
+                </div>
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="pip-btn vk-btn" onclick="vkPress('A')">A</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('S')">S</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('D')">D</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('F')">F</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('G')">G</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('H')">H</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('J')">J</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('K')">K</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('L')">L</button>
+                </div>
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="pip-btn vk-btn" onclick="vkPress('Z')">Z</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('X')">X</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('C')">C</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('V')">V</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('B')">B</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('N')">N</button>
+                    <button class="pip-btn vk-btn" onclick="vkPress('M')">M</button>
+                    <button class="pip-btn vk-btn" onclick="vkBackspace()" style="flex: 1.5;">⌫</button>
+                </div>
+                <!-- v0.37: punct keys demoted to narrow .vk-sm utility keys; SPACE/ENTER became
+                     .vk-wide word keys whose text can never spill its box -->
+                <!-- v0.38: '?' joins the punctuation utility keys; shares rebalanced for 7 keys -->
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress(':')">:</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('-')">-</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress(',')">,</button>
+                    <button class="pip-btn vk-btn vk-wide" onclick="vkPress(' ')" style="flex: 2.6;">SPACE</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('.')">.</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('?')">?</button>
+                    <button class="pip-btn vk-btn vk-wide" onclick="vkConfirm()" style="flex: 2.2; border-style: dashed; font-weight: bold;">ENTER</button>
+                </div>
+                <!-- v0.81: brackets and angle brackets row -->
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('[')">[</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress(']')">]</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('<')">&lt;</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('>')">&gt;</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('(')">(</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress(')')">)</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('/')">/</button>
+                    <button class="pip-btn vk-btn vk-sm" onclick="vkPress('!')">!</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 8px;">
+                <button class="pip-btn" onclick="vkCancel()" style="border-style: dashed; margin: 0; font-size: 1rem; padding: 4px; opacity: 0.8;">CANCEL ENTRY</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR CODE SCANNER MODAL -->
+    <div id="qr-scan-modal" class="modal-overlay" style="z-index: 1000; background: var(--pip-bg);">
+        <div class="modal-content" style="width: 100%; height: 100vh; max-width: 100%; border: none; padding: 20px; display: flex; flex-direction: column;">
+            <h3 style="text-align: center; margin-bottom: 20px;">SCANNING DATA TRANSFER</h3>
+            
+            <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; border: 2px dashed var(--pip-color); margin-bottom: 20px; overflow: hidden;">
+                <!-- the scanner library injects into this specific div -->
+                <div id="qr-reader" style="width: 100%; max-width: 500px;"></div>
+            </div>
+            
+            <button class="pip-btn" onclick="stopQRScanner()" style="border-style: dashed; margin-top: auto; padding: 15px; font-size: 1.5rem;">CANCEL SCAN</button>
+        </div>
+    </div>
+
+    <!-- QR CODE DISPLAY MODAL -->
+    <div id="qr-display-modal" class="modal-overlay" style="z-index: 1000; background: var(--pip-bg);">
+        <div class="modal-content" style="width: 100%; height: 100vh; max-width: 100%; border: none; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h3 style="text-align: center; margin-bottom: 20px;">BROADCASTING DATA</h3>
+            <p style="text-align: center; opacity: 0.8; margin-bottom: 20px;">Have another Wastelander scan this code with their Pox-Boy scanner.</p>
+            <div id="qr-code-canvas" style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 20px var(--pip-color);"></div>
+            <div style="display: flex; gap: 10px; margin-top: 40px; width: 100%; max-width: 400px; flex-direction: column;">
+                <button class="pip-btn" onclick="closeQRDisplay(true)">TRANSFER COMPLETE</button>
+                <button class="pip-btn" onclick="closeQRDisplay(false)" style="border-color: #ff3333; color: #ff3333; border-style: dashed;">CANCEL TRANSFER (REFUND ITEM)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHOTO ARCHIVE MODAL (REMOVED: Now Inline) -->
+
+    <!-- ACTION MODAL -->
+    <div id="action-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="action-title">ITEM NAME</h3>
+            <p id="action-effects" style="margin-bottom: 15px; opacity: 0.8;"></p>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="pip-btn" id="btn-primary-action" style="flex-grow: 1;">CONSUME</button>
+                <button class="pip-btn" onclick="generateItemQR()" style="flex-grow: 1; border-color: #42b6ff; color: #42b6ff;">TRADE (QR)</button>
+            </div>
+            <button class="pip-btn" id="dev-add-one-btn" onclick="modifyItem(1)">+ ADD ONE</button>
+            <button class="pip-btn" id="dev-remove-one-btn" onclick="modifyItem(-1)">- REMOVE ONE</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 25px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- ADD ITEM MODAL -->
+    <div id="add-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>CREATE CUSTOM ITEM</h3>
+            <div class="form-group"><label>ITEM NAME</label><input type="text" id="add-name" class="pip-input vk-target" readonly onclick="openVk('add-name')"></div>
+            <div class="form-group"><label>CATEGORY</label>
+                <select id="add-type" class="pip-input">
+                    <option value="weapons">WEAPONS</option><option value="apparel">APPAREL</option>
+                    <option value="aid">AID (CONSUMABLE)</option><option value="misc">MISC</option><option value="ammo">AMMO</option>
+                </select>
+            </div>
+            <div class="form-group"><label>EFFECTS / STATS</label><input type="text" id="add-effects" class="pip-input vk-target" readonly onclick="openVk('add-effects')"></div>
+            <button class="pip-btn" onclick="saveNewItem()">SAVE ITEM</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- ADD QUEST MODAL -->
+    <div id="add-quest-modal" class="modal-overlay">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h3>ADD NEW QUEST</h3>
+            <div class="form-group"><label>QUEST TITLE</label><input type="text" id="q-name" class="pip-input vk-target" readonly onclick="openVk('q-name')" placeholder="e.g. Find the VIP Lounge"></div>
+            <!-- v0.55: both are themed prompt pickers now; the fields display the choice -->
+            <div class="form-group"><label>TYPE</label>
+                <input type="text" id="q-type" class="pip-input" readonly onclick="pickQuestType()" style="cursor: pointer;" value="MAIN QUEST">
+            </div>
+            <div class="form-group"><label>GIVEN BY</label>
+                <input type="text" id="q-giver" class="pip-input" readonly onclick="pickQuestGiver()" style="cursor: pointer;" value="UNKNOWN WASTELANDER">
+            </div>
+            <div class="form-group"><label>LOCATION</label><input type="text" id="q-loc" class="pip-input vk-target" readonly onclick="openVk('q-loc')" placeholder="e.g. Floor 2"></div>
+            <div class="form-group"><label>EXPIRATION TIME (Optional)</label><input type="text" id="q-time" class="pip-input vk-target" readonly onclick="openVk('q-time')" placeholder="e.g. 18:00 (24h format)"></div>
+            <div class="form-group"><label>OBJECTIVES (Comma separated)</label><input type="text" id="q-obj" class="pip-input vk-target" readonly onclick="openVk('q-obj')" placeholder="e.g. Enter venue, Get wristband"></div>
+            
+            <button class="pip-btn" onclick="saveNewQuest()">SAVE QUEST</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM/PROMPT MODAL -->
+    <div id="custom-prompt-modal" class="modal-overlay" style="z-index: 300;">
+        <div class="modal-content pulse-alert" style="border: 2px dashed var(--pip-color); text-align: center;">
+            <h3 id="cp-title">SYSTEM QUERY</h3>
+            <!-- v0.45: optional image slot (mail photo viewer); hidden/reset per open -->
+            <img id="cp-img" alt="" style="display:none; max-width:100%; max-height:35vh; object-fit:contain; margin:0 auto 10px; border:1px solid var(--pip-color);">
+            <!-- v0.45: long messages scroll inside the box (pre-line honors \n) so buttons never get pushed off-screen -->
+            <p id="cp-text" style="margin: 25px 0; font-size: 1.4rem; font-weight: bold; white-space: pre-line; max-height: 40vh; overflow-y: auto;"></p>
+            <div id="cp-buttons" style="display: flex; gap: 10px; justify-content: center; flex-direction: column;">
+                <!-- Buttons injected by JS (including fallback close button) -->
+            </div>
+        </div>
+    </div>
+
+    <!-- QUEST ACTION MODAL -->
+    <div id="quest-action-modal" class="modal-overlay" style="z-index: 55;">
+        <div class="modal-content">
+            <h3 id="qa-title" style="border-bottom: 2px solid var(--pip-color); padding-bottom: 5px; margin-bottom: 15px;">QUEST NAME</h3>
+            
+            <div style="font-size: 1rem; opacity: 0.8; margin-bottom: 15px;">
+                <div id="qa-giver" style="margin-bottom: 5px;"></div>
+                <div id="qa-loc" style="margin-bottom: 5px;"></div>
+                <div id="qa-time" style="margin-bottom: 5px;"></div>
+            </div>
+
+            <h4 style="margin-bottom: 5px; opacity: 0.9;">OBJECTIVES:</h4>
+            <div id="qa-obj" style="margin-bottom: 25px; padding-left: 10px; border-left: 2px solid var(--pip-color-dim);"></div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="pip-btn" id="qa-toggle-btn" onclick="executeQuestToggle()">MARK AS COMPLETE</button>
+                <button class="pip-btn" onclick="generateQuestQR()" style="border-color: #42b6ff; color: #42b6ff;">SHARE (QR)</button>
+            </div>
+            
+            <button class="pip-btn" id="qa-abandon-btn" onclick="executeQuestAbandon()" style="border-color: #ffb642; color: #ffb642;">ABANDON QUEST</button>
+            
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CLOSE LOG</button>
+        </div>
+    </div>
+    <div id="add-waypoint-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>ADD NEW MAP MARKER</h3>
+            <div class="form-group"><label>MARKER NAME</label><input type="text" id="wp-name" class="pip-input vk-target" readonly onclick="openVk('wp-name')" placeholder="e.g. VIP Bar"></div>
+            <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 15px;">Coordinates locked to map selection.</p>
+
+            <!-- v0.52: privacy decoy placement — available to every unit, Overseer or not -->
+            <button class="pip-btn" onclick="setDecoySite()" style="border-color: #ffb642; color: #ffb642; margin-bottom: 12px;">[SET DECOY SITE HERE]</button>
+
+            <!-- v0.50: OVERSEER zone placement — same long-press flow, true 15m fences drawn on every unit -->
+            <div id="wp-overseer-zones" style="display:none; margin-bottom:12px;">
+                <button class="pip-btn" onclick="dropHotZone('map')" style="border-color:#ff3333; color:#ff3333; margin-bottom:8px;">[☢ HOT ZONE HERE]</button>
+                <button class="pip-btn" onclick="dropMedZone('map')" style="border-color:#5fc98e; color:#5fc98e; margin-bottom:8px;">[✚ MED ZONE HERE]</button>
+                <button class="pip-btn" onclick="dropDeconZone('map')" style="border-color:#42d4f5; color:#42d4f5;">[✦ DECON STATION HERE (15M)]</button>
+            </div>
+
+            <button class="pip-btn" onclick="saveNewWaypoint()">SAVE MARKER</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- v0.55: REMOVE WAYPOINT modal deleted -- removal is a themed prompt picker now -->
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal-content">
+            <h3 id="auth-title">OVERSEER AUTHORIZATION</h3>
+            <p id="auth-desc" style="margin-bottom: 15px; opacity: 0.8;">Enter security code to modify faction reputation.</p>
+            
+            <div class="form-group" id="auth-amount-group">
+                <label>ADJUSTMENT AMOUNT</label>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    <button class="theme-btn" onclick="stepNumberInput('rep-amount', -5, 5)" style="font-size: 1.4rem; padding: 5px 12px;">-</button>
+                    <input type="text" id="rep-amount" class="pip-input" value="5" readonly style="text-align: center; cursor: default;">
+                    <button class="theme-btn" onclick="stepNumberInput('rep-amount', 5, 5)" style="font-size: 1.4rem; padding: 5px 12px;">+</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>SECURITY CODE</label>
+                <input type="password" id="auth-code" class="pip-input vk-target" readonly onclick="openVk('auth-code')" placeholder="****" style="text-align: center; letter-spacing: 5px; font-size: 2rem;">
+            </div>
+            
+            <button class="pip-btn" onclick="confirmAuth()">AUTHORIZE</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- ADD FACTION MODAL -->
+    <div id="add-faction-modal" class="modal-overlay" style="z-index: 65;">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h3>ADD NEW FACTION</h3>
+            <div class="form-group"><label>FACTION NAME</label><input type="text" id="fac-name" class="pip-input vk-target" readonly onclick="openVk('fac-name')" placeholder="e.g. THE WAR BOYS"></div>
+            <div class="form-group"><label>STARTING REP</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="theme-btn" onclick="stepNumberInput('fac-rep', -5)" style="font-size: 1.4rem; padding: 5px 12px;">-</button>
+                    <input type="text" id="fac-rep" class="pip-input" value="0" readonly style="text-align: center; cursor: default;">
+                    <button class="theme-btn" onclick="stepNumberInput('fac-rep', 5)" style="font-size: 1.4rem; padding: 5px 12px;">+</button>
+                </div>
+            </div>
+            <div class="form-group"><label>SHORT BLURB</label><input type="text" id="fac-blurb" class="pip-input vk-target" readonly onclick="openVk('fac-blurb')" placeholder="e.g. Cult fanatical foot soldiers..."></div>
+            <div class="form-group"><label>LEADER / BOSS</label><input type="text" id="fac-leader" class="pip-input vk-target" readonly onclick="openVk('fac-leader')" placeholder="e.g. Immortan Joe"></div>
+            <div class="form-group"><label>FULL LORE / BIO</label><textarea id="fac-bio" class="pip-input vk-target" readonly onclick="openVk('fac-bio')" rows="3"></textarea></div>
+            <div class="form-group"><label>KNOWN MEMBERS (Comma separated)</label><input type="text" id="fac-members" class="pip-input vk-target" readonly onclick="openVk('fac-members')"></div>
+            <button class="pip-btn" onclick="saveNewFaction()">SAVE FACTION</button>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- EDIT FACTION MODAL -->
+    <div id="edit-faction-modal" class="modal-overlay" style="z-index: 65;">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h3>EDIT FACTION</h3>
+            <div class="form-group">
+                <label>FACTION UNDER EDIT</label>
+                <!-- v0.55: themed prompt picker, no native dropdown chrome -->
+                <input type="text" id="fac-edit-select" class="pip-input" readonly onclick="pickFactionToEdit()" style="cursor: pointer;" value="CHOOSE FACTION...">
+            </div>
+            <div class="form-group"><label>FACTION NAME</label><input type="text" id="edit-fac-name" class="pip-input vk-target" readonly onclick="openVk('edit-fac-name')"></div>
+            <div class="form-group"><label>CURRENT REP</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="theme-btn" onclick="stepNumberInput('edit-fac-rep', -5)" style="font-size: 1.4rem; padding: 5px 12px;">-</button>
+                    <input type="text" id="edit-fac-rep" class="pip-input" readonly style="text-align: center; cursor: default;">
+                    <button class="theme-btn" onclick="stepNumberInput('edit-fac-rep', 5)" style="font-size: 1.4rem; padding: 5px 12px;">+</button>
+                </div>
+            </div>
+            <div class="form-group"><label>SHORT BLURB</label><input type="text" id="edit-fac-blurb" class="pip-input vk-target" readonly onclick="openVk('edit-fac-blurb')"></div>
+            <div class="form-group"><label>LEADER / BOSS</label><input type="text" id="edit-fac-leader" class="pip-input vk-target" readonly onclick="openVk('edit-fac-leader')"></div>
+            <div class="form-group"><label>FULL LORE / BIO</label><textarea id="edit-fac-bio" class="pip-input vk-target" readonly onclick="openVk('edit-fac-bio')" rows="3"></textarea></div>
+            <div class="form-group"><label>KNOWN MEMBERS (Comma separated)</label><input type="text" id="edit-fac-members" class="pip-input vk-target" readonly onclick="openVk('edit-fac-members')"></div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="pip-btn" onclick="saveEditFaction()">SAVE</button>
+                <button class="pip-btn" onclick="deleteFaction()" style="border-color: #ff3333; color: #ff3333;">DELETE</button>
+            </div>
+            <button class="pip-btn" onclick="closeModals()" style="margin-top: 15px; border-style: dashed;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- FACTION DETAIL MODAL -->
+    <div id="faction-detail-modal" class="modal-overlay" style="z-index: 55;">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <h2 id="fd-name" style="border-bottom: 2px solid var(--pip-color); padding-bottom: 5px; margin-bottom: 15px;">FACTION NAME</h2>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; font-size: 1.2rem;">
+                <span>RELATION: <span id="fd-relation">NEUTRAL</span></span>
+                <span>REP: <span id="fd-rep">0</span></span>
+            </div>
+            <h3 style="margin-bottom: 5px; opacity: 0.8;">DATABASE ENTRY:</h3>
+            <p id="fd-bio" style="margin-bottom: 20px; font-size: 1.1rem; line-height: 1.3;"></p>
+            <h3 style="margin-bottom: 5px; opacity: 0.8;">KNOWN MEMBERS:</h3>
+            <ul id="fd-members" style="list-style-type: square; padding-left: 20px; font-size: 1.1rem; margin-bottom: 25px;">
+            </ul>
+            <button class="pip-btn" onclick="closeModals()">BACK TO ARCHIVES</button>
+        </div>
+    </div>
+
+    <!-- PHOTO VIEWER MODAL: tap a databank tile to view the full image (no scrolling) -->
+    <div id="photo-viewer-modal" class="modal-overlay" style="z-index: 110; padding: 8px;" onclick="closePhotoViewer()">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 95vw; max-height: 94vh;" onclick="event.stopPropagation();">
+            <img id="photo-viewer-img" alt="DATABANK IMAGE" style="max-width: 100%; max-height: 78vh; object-fit: contain; border: 2px solid var(--pip-color); background: #000; box-shadow: 0 0 18px var(--pip-color-dim);">
+            <div style="display: flex; gap: 10px; width: 100%; max-width: 420px; flex-wrap: wrap; justify-content: center;">
+                <button class="pip-btn" id="photo-viewer-toggle" onclick="toggleViewerVersion()" style="margin: 0; display: none; border-color: #42b6ff; color: #42b6ff;">VIEW ORIGINAL</button>
+                <button class="pip-btn" id="photo-viewer-delete" onclick="deleteViewerPhoto()" style="margin: 0; border-color: #ff3333; color: #ff3333;">DELETE</button>
+                <button class="pip-btn" onclick="closePhotoViewer()" style="margin: 0; border-style: dashed;">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION MODAL -->
+    <div id="notification-modal" class="modal-overlay" style="z-index: 105;">
+        <div class="modal-content pulse-alert" style="border: 2px dashed var(--pip-color); text-align: center;">
+            <h3>RADIO TRANSMISSION</h3>
+            <p id="notification-text" style="margin: 25px 0; font-size: 1.4rem; font-weight: bold;"></p>
+            <button class="pip-btn" onclick="document.getElementById('notification-modal').style.display='none';">ACKNOWLEDGE</button>
+        </div>
+    </div>
+
+    <!-- PRE-BOOT CALIBRATION OVERLAY -->
+    <div id="pre-boot-overlay" class="modal-overlay" style="z-index: 250; background: var(--pip-bg); flex-direction: column; display: none;">
+        <!-- Version Tag & Dev Skip Button -->
+        <div style="position: absolute; top: 10px; right: 10px; z-index: 260; display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+            <span style="font-size: 0.8rem; opacity: 0.5;">v0.81</span>
+            <button class="pip-btn" onclick="devSkipToApp()" style="font-size: 0.7rem; padding: 2px 5px; border: none; color: #ff3333; opacity: 0.5;">[DEV: FAST BOOT]</button>
+        </div>
+        
+        <div class="crt" style="position: absolute; top:0; left:0; right:0; bottom:0; pointer-events: none; z-index: 251;"></div>
+        <div id="pre-boot-box" style="z-index: 252; width: 100%; max-width: 500px; padding: 25px; text-align: center; border: 2px solid var(--pip-color); background: rgba(5, 16, 5, 0.9); box-shadow: 0 0 15px var(--pip-color-dim);">
+            <h2 style="margin-bottom: 15px; border-bottom: 2px solid var(--pip-color); padding-bottom: 10px;">HARDWARE CALIBRATION</h2>
+            <p style="margin-bottom: 25px; opacity: 0.8; font-size: 1.1rem; line-height: 1.3;">Terminal initialized. Configure display parameters and AUTHORIZE ALL HARDWARE now to prevent interruptions during field operations.</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+                <button class="pip-btn" id="pb-fs-btn" onclick="toggleFullscreen()" style="font-size: 1.4rem;">[1] ENABLE FULLSCREEN</button>
+                <button class="pip-btn" id="pb-perm-btn" onclick="primeDevicePermissions()" style="font-size: 1.4rem;">[2] AUTHORIZE SATELLITE & OPTICS</button>
+                <div id="pb-perm-status" style="display: none; font-size: 1rem; text-align: left; border: 1px dashed var(--pip-color-dim); padding: 8px; line-height: 1.3;"></div>
+                <button class="pip-btn" id="pb-install-btn" onclick="installApp()" style="font-size: 1.4rem; display: none;">[3] INSTALL APP</button>
+            </div>
+            
+            <!-- v0.81: GPS scrambling notice -->
+            <div style="margin-bottom: 20px; padding: 10px; border: 1px dashed #ffb642; background: rgba(255, 182, 66, 0.1);">
+                <p style="font-size: 0.95rem; color: #ffb642; margin: 0; line-height: 1.4;">
+                    <strong>📍 LOCATION PROTECTION ACTIVE</strong><br>
+                    Your GPS location is scrambled and shows you at the event site for privacy. Other wastelanders cannot see your real location.<br>
+                    <span style="font-size: 0.85rem; opacity: 0.8;">Disable in OPTIONS if you want to broadcast your real location.</span>
+                </p>
+            </div>
+            
+            <button class="pip-btn" onclick="startBootSequence()" style="font-size: 1.6rem; font-weight: bold; border-style: dashed; padding: 15px;">[4] COMMENCE LOGON</button>
+        </div>
+    </div>
+
+    <!-- BOOT SPLASH SCREEN -->
+    <div id="boot-splash" class="modal-overlay" style="z-index: 200; background: var(--pip-bg); flex-direction: column; display: flex;">
+        <span style="position: absolute; top: 10px; right: 10px; font-size: 0.8rem; opacity: 0.5; z-index: 203;">v0.81</span>
+        <div class="crt" style="position: absolute; top:0; left:0; right:0; bottom:0; pointer-events: none; z-index: 201;"></div>
+        <div style="z-index: 202; width: 100%; max-width: 600px; padding: 20px; text-align: left; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; justify-content: flex-end;" id="boot-text-container">
+            <p id="boot-log-1" style="margin-bottom: 5px; display: none; font-size: 1rem;">ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM</p>
+            <p id="boot-log-2" style="margin-bottom: 5px; display: none; font-size: 1rem;">COPYRIGHT 2075-2077 ROBCO INDUSTRIES</p>
+            <p id="boot-log-3" style="margin-bottom: 15px; display: none; font-size: 1rem;">-Server 1-</p>
+            <p id="boot-log-4" style="margin-bottom: 5px; display: none; font-size: 1rem;">Booting V.T.A.R.S...</p>
+            <p id="boot-log-5" style="margin-bottom: 15px; display: none; font-size: 1rem;">(Vault-Tec Assisted Registration System)</p>
+            <p id="boot-log-6" style="margin-bottom: 5px; display: none; color: #ff3333; text-shadow: 0 0 5px #ff3333; font-size: 1rem;">ERROR: UNAUTHORIZED USER DETECTED.</p>
+            <p id="boot-log-7" style="margin-bottom: 5px; display: none; color: #ff3333; text-shadow: 0 0 5px #ff3333; font-size: 1rem;">LOCKING TERMINAL PROTOCOLS...</p>
+            
+            <p id="boot-log-8" style="margin-top: 10px; margin-bottom: 5px; display: none; color: #ffb642; text-shadow: 0 0 5px #ffb642; font-size: 1rem; font-weight: bold;">> run override.exe -force</p>
+            <p id="boot-log-9" style="margin-bottom: 5px; display: none; color: #ffb642; text-shadow: 0 0 5px #ffb642; font-size: 1rem;">> INJECTING MALICIOUS PAYLOAD [0x4FA12C]...</p>
+            <p id="boot-log-10" style="margin-bottom: 5px; display: none; color: #ffb642; text-shadow: 0 0 5px #ffb642; font-size: 1rem;">> OVERWRITING KERNEL MEMORY... [OK]</p>
+            <p id="boot-log-11" style="margin-bottom: 5px; display: none; color: #ffb642; text-shadow: 0 0 5px #ffb642; font-size: 1rem;">> BYPASSING MAINFRAME ENCRYPTION...</p>
+            <div id="boot-log-12" style="margin-bottom: 5px; display: none; color: #ffb642; text-shadow: 0 0 5px #ffb642; font-size: 1rem; padding-left: 20px;">
+                <!-- Decoding animation goes here -->
+                <span id="hack-decode-text">#%@*!&^</span>
+            </div>
+            <p id="boot-log-13" style="margin-bottom: 5px; display: none; color: #ffb642; text-shadow: 0 0 5px #ffb642; font-size: 1rem; font-weight: bold;">> ACCESS GRANTED. FIREWALL DISABLED.</p>
+            
+            <p id="boot-log-14" style="margin-top: 15px; margin-bottom: 10px; display: none; font-weight: bold; font-size: 1.2rem;">SIDELOADING POX-BOY 3026 OS...</p>
+            <p id="boot-log-15" style="margin-bottom: 10px; display: none; text-align: center; font-size: 1.2rem;" class="pulse-alert">PLEASE STAND BY</p>
+            <div style="height: 20px;"></div>
+        </div>
+    </div>
+
+    <!-- ONBOARDING OVERLAY -->
+    <div id="onboarding-overlay" class="modal-overlay" style="z-index: 100; background: var(--pip-bg); flex-direction: column;">
+        <div class="crt" style="position: absolute; top:0; left:0; right:0; bottom:0; pointer-events: none; z-index: 101;"></div>
+        <div style="z-index: 102; width: 100%; max-width: 600px; padding: 20px; max-height: 95vh; overflow-y: auto;">
+            <div style="text-align: center; border-bottom: 2px solid var(--pip-color); padding-bottom: 10px; margin-bottom: 20px;">
+                <h1 style="text-shadow: 0 0 5px var(--pip-color);">VAULT-TEC ASSISTED REGISTRATION SYSTEM</h1>
+                <p style="font-size: 1.1rem; opacity: 0.8; margin-top: 5px;">POX ECLIPSE VERSION 5.0</p>
+            </div>
+            
+            <div id="ob-dynamic-container">
+                <!-- JS will inject steps here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
