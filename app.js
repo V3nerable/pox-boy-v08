@@ -1848,17 +1848,27 @@
             container.innerHTML = '';
             
             const isDev = localStorage.getItem('pipboy-dev-mode') === 'true';
+            const myUid = localStorage.getItem('pipboy-uid');
             if (isDev) {
                 container.innerHTML += '<button class="theme-btn" onclick="createGlobalContract()" style="width:100%; border-style:dashed; margin-bottom:15px;">[+ CREATE GLOBAL CONTRACT]</button>';
             }
             
-            const contracts = Object.entries(globalContracts).filter(([id, c]) => c.status === 'open');
-            if (contracts.length === 0) {
-                container.innerHTML += '<p style="text-align:center; opacity:0.5;">NO GLOBAL CONTRACTS AVAILABLE</p>';
+            // v0.85: show ALL contracts (open + completed awaiting verification + verified)
+            const allContracts = Object.entries(globalContracts);
+            if (allContracts.length === 0) {
+                container.innerHTML += '<p style="text-align:center; opacity:0.5;">NO GLOBAL CONTRACTS</p>';
                 return;
             }
             
-            contracts.forEach(([id, c]) => {
+            // Sort: open first, then completed awaiting verification, then verified/rejected
+            allContracts.sort((a, b) => {
+                const aStatus = a[1].status || 'open';
+                const bStatus = b[1].status || 'open';
+                const order = { open: 0, completed: 1, verified: 2, rejected: 3 };
+                return (order[aStatus] || 0) - (order[bStatus] || 0);
+            });
+            
+            allContracts.forEach(([id, c]) => {
                 const el = document.createElement('div');
                 el.className = 'item-row';
                 el.style.flexDirection = 'column';
@@ -1867,15 +1877,52 @@
                 const typeLabel = c.type === 'first' ? 'FIRST TO COMPLETE' : (c.type === 'many' ? 'MANY CAN COMPLETE' : 'TIMED');
                 const expiresStr = c.expiresAt ? `EXPIRES: ${new Date(c.expiresAt).toLocaleString()}` : 'NO EXPIRY';
                 
+                // v0.85: determine completion/verification status
+                const alreadyCompleted = c.type === 'many' && c.completedBy && c.completedBy.includes(myUid);
+                const isCompleted = c.status === 'completed';
+                const isVerified = c.verifiedBy && c.verifiedBy !== 'REJECTED';
+                const isRejected = c.status === 'rejected' || c.verifiedBy === 'REJECTED';
+                
+                let statusLine = '';
+                let textDecoration = 'none';
+                let opacity = '1';
+                let borderColor = '';
+                
+                if (isVerified) {
+                    statusLine = `<div style="font-size: 0.85rem; color: #39ff14; margin-top: 4px;">✓ VERIFIED BY ${escapeHtml(c.verifiedBy)}</div>`;
+                    textDecoration = 'line-through';
+                    opacity = '0.6';
+                    borderColor = 'border-color: #39ff14;';
+                } else if (isRejected) {
+                    statusLine = `<div style="font-size: 0.85rem; color: #ff3333; margin-top: 4px;">✗ REJECTED</div>`;
+                    textDecoration = 'line-through';
+                    opacity = '0.4';
+                    borderColor = 'border-color: #ff3333;';
+                } else if (isCompleted) {
+                    statusLine = `<div style="font-size: 0.85rem; color: #ffb642; margin-top: 4px;">⏳ AWAITING VERIFICATION</div>`;
+                    if (c.completedByName) statusLine += `<div style="font-size: 0.8rem; opacity: 0.6;">COMPLETED BY: ${escapeHtml(c.completedByName)}</div>`;
+                    textDecoration = 'line-through';
+                    opacity = '0.7';
+                    borderColor = 'border-color: #ffb642;';
+                } else if (alreadyCompleted) {
+                    statusLine = `<div style="font-size: 0.85rem; color: #ffb642; margin-top: 4px;">⏳ YOU COMPLETED — AWAITING VERIFICATION</div>`;
+                    textDecoration = 'line-through';
+                    opacity = '0.7';
+                    borderColor = 'border-color: #ffb642;';
+                }
+                
+                if (borderColor) el.style.cssText += borderColor;
+                
                 el.innerHTML = `
-                    <div style="display: flex; justify-content: space-between;">
-                        <div>■ ${escapeHtml(c.title)}</div>
+                    <div style="display: flex; justify-content: space-between; opacity: ${opacity};">
+                        <div style="text-decoration: ${textDecoration};">■ ${escapeHtml(c.title)}</div>
                         <div style="font-size: 0.85rem; opacity: 0.7;">${typeLabel}</div>
                     </div>
                     <div style="font-size: 0.85rem; opacity: 0.7; margin-top: 4px;">ISSUED BY: ${escapeHtml(c.issuerName || 'UNKNOWN')}</div>
-                    <div style="font-size: 0.85rem; opacity: 0.6; margin-top: 2px;">${expiresStr}</div>
-                    <div style="margin-top: 6px; font-size: 0.9rem;">${escapeHtml(c.description || '')}</div>
-                    ${c.reward ? `<div style="margin-top: 4px; font-size: 0.85rem; color: #5fc98e;">REWARD: ${escapeHtml(c.reward)}</div>` : ''}
+                    ${!isCompleted && !isVerified && !isRejected ? `<div style="font-size: 0.85rem; opacity: 0.6; margin-top: 2px;">${expiresStr}</div>` : ''}
+                    <div style="margin-top: 6px; font-size: 0.9rem; opacity: ${opacity}; text-decoration: ${textDecoration};">${escapeHtml(c.description || '')}</div>
+                    ${c.reward ? `<div style="margin-top: 4px; font-size: 0.85rem; color: #5fc98e; opacity: ${opacity};">REWARD: ${escapeHtml(c.reward)}</div>` : ''}
+                    ${statusLine}
                 `;
                 container.appendChild(el);
             });
@@ -2107,6 +2154,10 @@
                 buttons.push({ label: 'ATTACH PHOTO EVIDENCE', action: () => attachPhotoToContract(id, c) });
                 buttons.push({ label: 'COMPLETE CONTRACT', action: () => completeGlobalContract(id, c) });
             }
+            // v0.86: show photo evidence if attached (viewable by all)
+            if (c.evidencePhoto) {
+                buttons.push({ label: '📷 VIEW EVIDENCE PHOTO', action: () => viewEvidencePhoto(c.evidencePhoto) });
+            }
             if (isDev && c.status === 'open') {
                 buttons.push({ label: 'VERIFY (OVERSEER)', action: () => verifyGlobalContract(id, c) });
                 buttons.push({ label: 'CANCEL CONTRACT', color: '#ff3333', action: () => cancelGlobalContract(id) });
@@ -2115,8 +2166,28 @@
             
             const typeLabel = c.type === 'first' ? 'FIRST TO COMPLETE' : (c.type === 'many' ? 'MANY CAN COMPLETE' : 'TIMED');
             const statusInfo = alreadyCompleted ? 'YOU COMPLETED THIS' : (c.status === 'open' ? 'OPEN' : c.status.toUpperCase());
+            const photoNote = c.evidencePhoto ? '\n📷 PHOTO EVIDENCE ATTACHED' : '';
             
-            showCustomPrompt(`${escapeHtml(c.title)}\n\n${escapeHtml(c.description || '')}\n\nTYPE: ${typeLabel}\nSTATUS: ${statusInfo}${c.reward ? '\nREWARD: ' + escapeHtml(c.reward) : ''}`, buttons);
+            showCustomPrompt(`${escapeHtml(c.title)}\n\n${escapeHtml(c.description || '')}\n\nTYPE: ${typeLabel}\nSTATUS: ${statusInfo}${c.reward ? '\nREWARD: ' + escapeHtml(c.reward) : ''}${photoNote}`, buttons);
+            
+            // v0.86: show evidence photo thumbnail in the modal
+            if (c.evidencePhoto) {
+                const cpImg = document.getElementById('cp-img');
+                if (cpImg) {
+                    cpImg.src = typeof c.evidencePhoto === 'object' ? entryPip(c.evidencePhoto) : c.evidencePhoto;
+                    cpImg.style.display = 'block';
+                }
+            }
+        }
+
+        // v0.86: View evidence photo full-size
+        function viewEvidencePhoto(photo) {
+            const src = typeof photo === 'object' ? entryPip(photo) : photo;
+            showCustomPrompt('EVIDENCE PHOTO', [
+                { label: 'CLOSE', action: () => {} }
+            ]);
+            const cpImg = document.getElementById('cp-img');
+            if (cpImg) { cpImg.src = src; cpImg.style.display = 'block'; }
         }
 
         // v0.70: Complete global contract
@@ -2847,10 +2918,14 @@
                 ])
             }));
             buttons.push({ label: 'CANCEL', color: 'var(--pip-color-dim)', action: () => {} });
-            showCustomPrompt('REMOVE WHICH MAP MARKER?', buttons);
+            // v0.86: empty text — heading was blocking scroll to top of button list
+            showCustomPrompt('', buttons);
             // v0.57: scroll the button stack to the top so the first markers are visible
             const btnC = document.getElementById('cp-buttons');
             if (btnC) btnC.scrollTop = 0;
+            // v0.86: also scroll the modal content to top
+            const mc = document.querySelector('#custom-prompt-modal .modal-content');
+            if (mc) mc.scrollTop = 0;
         }
         
         // v0.85: helper to close the custom prompt modal (class + inline style)
@@ -3873,6 +3948,8 @@
             }
             pariahEl.style.display = 'block';
             pariahEl.innerHTML = renderPariahPanel() + renderOverseerUserManagement() + renderOverseerGlowingOnes() + renderOverseerContractsToVerify();
+            // v0.86: auto-load contracts to verify after rendering
+            setTimeout(() => loadOverseerContractsToVerify(), 100);
         }
 
         // v0.63: overseer user management — view ALL users who have EVER broadcast, remove dead ones
@@ -4091,7 +4168,11 @@
                 const data = snap.val() || {};
                 const toVerify = Object.keys(data).filter(id => {
                     const c = data[id];
-                    return c.status === 'completed' && !c.verifiedBy;
+                    // v0.86: catch both 'first' type (status=completed) and 'many' type (has completedBy entries)
+                    if (c.verifiedBy) return false; // already verified or rejected
+                    if (c.status === 'completed') return true; // first-type completed
+                    if (c.type === 'many' && c.completedBy && c.completedBy.length > 0) return true; // many-type has completions
+                    return false;
                 }).map(id => ({ id, ...data[id] }));
                 
                 if (!toVerify.length) {
