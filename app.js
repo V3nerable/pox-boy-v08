@@ -5413,20 +5413,9 @@
                     }
                     if (mailSeen.indexOf(key) === -1) {
                         mailSeen.push(key); changedSeen = true;
-                        // v0.45: NOTIFY LINKS off = no pop-up; the scan parks as a MAIL
-                        // tab row and waits for YOU to tap it
-                        if (!notifyPref('link')) { linkScans[key] = l; continue; }
-                        showCustomPrompt((l.fromName || 'UNKNOWN') + ' HAS SCANNED YOUR DATACARD. ADD THEM TO WASTELANDERS MET?', [
-                            {
-                                label: 'ACCEPT LINK',
-                                action: () => {
-                                    addContact(safeUid(l.from), (l.fromName || 'UNKNOWN').toUpperCase());
-                                    retireLetter(key);
-                                    if (currentDataTab === 'wastelanders') { renderWastelanders(); renderLinkRequests(); }
-                                }
-                            },
-                            { label: 'IGNORE', color: 'var(--pip-color-dim)', action: () => { retireLetter(key); } }
-                        ]);
+                        // v0.81: ALWAYS park handshakes — never show modal on app load
+                        // User must manually check mail to see link requests
+                        linkScans[key] = l;
                     }
                     continue; // handshakes are prompts, never inbox rows
                 }
