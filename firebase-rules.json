@@ -108,18 +108,20 @@
       "$contractId": {
         ".write": true,
         ".validate": "newData.hasChildren(['title', 'issuerUid', 'issuerName', 'type', 'status', 'createdAt'])",
-        "title":       { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
-        "description": { ".validate": "newData.isString() && newData.val().length <= 500" },
-        "issuerUid":   { ".validate": "newData.isString() && newData.val().length <= 64" },
-        "issuerName":  { ".validate": "newData.isString() && newData.val().length <= 32" },
-        "type":        { ".validate": "newData.isString() && (newData.val() == 'first' || newData.val() == 'many' || newData.val() == 'timed')" },
-        "reward":      { ".validate": "newData.isString() && newData.val().length <= 100" },
-        "expiresAt":   { ".validate": "newData.isNumber() || newData.val() == null" },
-        "status":      { ".validate": "newData.isString() && (newData.val() == 'open' || newData.val() == 'completed' || newData.val() == 'cancelled')" },
-        "completedBy": { ".validate": "newData.isString() || newData.val() == null" },
-        "verifiedBy":  { ".validate": "newData.isString() && newData.val().length <= 32" },
-        "createdAt":   { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
-        "$other":      { ".validate": false }
+        "title":           { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+        "description":     { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "issuerUid":       { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "issuerName":      { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "type":            { ".validate": "newData.isString() && (newData.val() == 'first' || newData.val() == 'many' || newData.val() == 'timed')" },
+        "reward":          { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "expiresAt":       { ".validate": "newData.isNumber() || newData.val() == null" },
+        "status":          { ".validate": "newData.isString() && (newData.val() == 'open' || newData.val() == 'completed' || newData.val() == 'cancelled' || newData.val() == 'rejected')" },
+        "completedBy":     { ".validate": true },
+        "completedByName": { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "verifiedBy":      { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "evidencePhoto":   { ".validate": "newData.isString()" },
+        "createdAt":       { ".validate": "newData.isNumber() && newData.val() > 1735689600000" },
+        "$other":          { ".validate": false }
       }
     },
     "bounties": {

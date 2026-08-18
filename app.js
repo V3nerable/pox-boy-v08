@@ -1722,11 +1722,23 @@
             // on every open so an old photo never bleeds into an unrelated query
             const cpImg = document.getElementById('cp-img');
             if (cpImg) { cpImg.style.display = 'none'; cpImg.removeAttribute('src'); }
-            document.getElementById('cp-text').innerText = text;
+            
+            // v0.87: hide title and text when text is empty (e.g., remove marker list)
+            const cpTitle = document.getElementById('cp-title');
+            const cpText = document.getElementById('cp-text');
+            if (!text || text.trim() === '') {
+                if (cpTitle) cpTitle.style.display = 'none';
+                if (cpText) cpText.style.display = 'none';
+            } else {
+                if (cpTitle) cpTitle.style.display = '';
+                if (cpText) { cpText.style.display = ''; cpText.innerText = text; }
+            }
+            
             const btnContainer = document.getElementById('cp-buttons');
             // v0.38: long button lists (e.g. mail recipient picker with a big rolodex)
             // used to spill off-screen -- cap and scroll the stack instead
-            btnContainer.style.maxHeight = '65vh';
+            // v0.87: use more vertical space when text is hidden
+            btnContainer.style.maxHeight = (!text || text.trim() === '') ? '85vh' : '65vh';
             btnContainer.style.overflowY = 'auto';
             btnContainer.style.webkitOverflowScrolling = 'touch';
             btnContainer.style.touchAction = 'pan-y';
@@ -2211,8 +2223,9 @@
             if (window.pendingContractPhoto) {
                 window.pendingContractPhoto.photo = entry;
                 showNotification('PHOTO ATTACHED - NOW COMPLETE CONTRACT');
-                // Re-open the contract modal to complete with photo
-                openGlobalContractModal(window.pendingContractPhoto.contractId, window.pendingContractPhoto.contract);
+                // v0.87: pass the pending photo (pip version) so the modal can display it
+                const contractWithPhoto = Object.assign({}, window.pendingContractPhoto.contract, { evidencePhoto: entryPip(entry) });
+                openGlobalContractModal(window.pendingContractPhoto.contractId, contractWithPhoto);
             }
         }
 
@@ -2227,8 +2240,9 @@
                 updates.completedByName = myName;
                 updates.verifiedBy = null; // needs verification
                 // v0.84: attach photo evidence if available
+                // v0.87: store only the pip version (smaller) to avoid Firebase size issues
                 if (window.pendingContractPhoto && window.pendingContractPhoto.contractId === id && window.pendingContractPhoto.photo) {
-                    updates.evidencePhoto = window.pendingContractPhoto.photo;
+                    updates.evidencePhoto = entryPip(window.pendingContractPhoto.photo);
                     window.pendingContractPhoto = null; // clear pending photo
                 }
             } else if (c.type === 'many') {
@@ -2237,8 +2251,9 @@
                     completedBy.push(myUid);
                     updates.completedBy = completedBy;
                     // v0.84: attach photo evidence if available
+                    // v0.87: store only the pip version (smaller) to avoid Firebase size issues
                     if (window.pendingContractPhoto && window.pendingContractPhoto.contractId === id && window.pendingContractPhoto.photo) {
-                        updates.evidencePhoto = window.pendingContractPhoto.photo;
+                        updates.evidencePhoto = entryPip(window.pendingContractPhoto.photo);
                         window.pendingContractPhoto = null; // clear pending photo
                     }
                 }
